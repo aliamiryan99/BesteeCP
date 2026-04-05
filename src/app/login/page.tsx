@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiLock, FiLogIn, FiUser } from 'react-icons/fi';
+import { FiLock, FiLogIn, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuthActions } from '@convex-dev/auth/react';
 import { useConvexAuth } from 'convex/react';
 import { useToastStore } from '@/store/toastStore';
@@ -16,6 +16,7 @@ export default function LoginPage() {
 
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -26,22 +27,34 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+
+    const originalConsoleError = console.error;
+    console.error = () => {}; // Suppress Convex's internal HTTP error logs to prevent Next.js from throwing the giant red Dev Overlay
+
     try {
-      await signIn("password", { phone, password, flow: "signIn" });
+      await signIn("custom-password", { phone, password, flow: "signIn" });
       pushToast({
         type: 'success',
         title: 'ورود موفق',
         message: 'در حال انتقال به داشبورد',
       });
       router.replace('/');
-    } catch (e: any) {
+    } catch (error: any) {
+      const errMsg = error?.message?.toLowerCase() ?? '';
+      let message = 'نام کاربری یا رمز عبور اشتباه است';
+      
+      if (errMsg.includes('ban')) {
+        message = 'امکان ورود وجود ندارد. حساب شما مسدود شده است.';
+      }
+
       pushToast({
         type: 'error',
         title: 'ورود ناموفق',
-        message: e?.message ?? 'اطلاعات ورود صحیح نیست',
+        message,
       });
     } finally {
       setLoading(false);
+      setTimeout(() => { console.error = originalConsoleError; }, 50); // Restore console logs
     }
   };
 
@@ -74,12 +87,19 @@ export default function LoginPage() {
           <div className="flex items-center rounded-2xl border border-white/10 bg-white/5 px-3">
             <FiLock className="text-muted" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-transparent px-3 py-3 text-white outline-none"
               placeholder="••••••••"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="px-2 text-muted transition hover:text-white"
+            >
+              {showPassword ? <FiEyeOff /> : <FiEye />}
+            </button>
           </div>
         </label>
 

@@ -44,7 +44,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`font-vazir app-shell antialiased`}>
+      <body className={`font-vazir app-shell antialiased`} suppressHydrationWarning>
         <ConvexClientProvider>
           <ToastHost />
           {children}

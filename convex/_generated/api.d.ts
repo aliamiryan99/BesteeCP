@@ -9,6 +9,7 @@
  */
 
 import type * as ai_ai from "../ai/ai.js";
+import type * as auth from "../auth.js";
 import type * as bookings_bookings from "../bookings/bookings.js";
 import type * as bookings_mutations from "../bookings/mutations.js";
 import type * as bookings_queries from "../bookings/queries.js";
@@ -44,6 +45,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "ai/ai": typeof ai_ai;
+  auth: typeof auth;
   "bookings/bookings": typeof bookings_bookings;
   "bookings/mutations": typeof bookings_mutations;
   "bookings/queries": typeof bookings_queries;

@@ -6,7 +6,7 @@ import { IncomeChart } from "@/components/dashboard/IncomeChart";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { TenantTable } from "@/components/dashboard/TenantTable";
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 
 export default function Home() {
   const tenants = useQuery(api.tenants.tenants.listAll);
