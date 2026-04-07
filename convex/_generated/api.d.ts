@@ -9,12 +9,14 @@
  */
 
 import type * as ai_ai from "../ai/ai.js";
+import type * as announcements from "../announcements.js";
 import type * as auth from "../auth.js";
 import type * as bookings_bookings from "../bookings/bookings.js";
 import type * as bookings_mutations from "../bookings/mutations.js";
 import type * as bookings_queries from "../bookings/queries.js";
 import type * as communications_sms from "../communications/sms.js";
 import type * as crons from "../crons.js";
+import type * as http from "../http.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as orders_cart from "../orders/cart.js";
 import type * as orders_orders from "../orders/orders.js";
@@ -29,6 +31,7 @@ import type * as tenants_gallery from "../tenants/gallery.js";
 import type * as tenants_settings from "../tenants/settings.js";
 import type * as tenants_site_content from "../tenants/site_content.js";
 import type * as tenants_tenants from "../tenants/tenants.js";
+import type * as testConfig from "../testConfig.js";
 import type * as uploads_upload from "../uploads/upload.js";
 import type * as users_auth from "../users/auth.js";
 import type * as users_authConfig from "../users/authConfig.js";
@@ -45,12 +48,14 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "ai/ai": typeof ai_ai;
+  announcements: typeof announcements;
   auth: typeof auth;
   "bookings/bookings": typeof bookings_bookings;
   "bookings/mutations": typeof bookings_mutations;
   "bookings/queries": typeof bookings_queries;
   "communications/sms": typeof communications_sms;
   crons: typeof crons;
+  http: typeof http;
   myFunctions: typeof myFunctions;
   "orders/cart": typeof orders_cart;
   "orders/orders": typeof orders_orders;
@@ -65,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   "tenants/settings": typeof tenants_settings;
   "tenants/site_content": typeof tenants_site_content;
   "tenants/tenants": typeof tenants_tenants;
+  testConfig: typeof testConfig;
   "uploads/upload": typeof uploads_upload;
   "users/auth": typeof users_auth;
   "users/authConfig": typeof users_authConfig;

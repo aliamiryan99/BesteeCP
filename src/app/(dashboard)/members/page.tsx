@@ -14,6 +14,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
 import { useToastStore } from "@/store/toastStore";
 import { CPUser, SupportRole } from "@/types/cp";
+import { translateRole } from "@/lib/translations";
 
 function AddUserModal({
   open,
@@ -459,7 +460,7 @@ export default function MembersPage() {
         <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-white/80">
           <p className="text-xl font-semibold text-white">عدم دسترسی</p>
           <p className="mt-2 text-sm text-muted-soft">
-            تنها نقش Creator می‌تواند کاربران جدید ثبت کند. در صورت نیاز با مدیر
+            تنها نقش خالق می‌تواند کاربران جدید ثبت کند. در صورت نیاز با مدیر
             سیستم تماس بگیرید.
           </p>
           <button
@@ -480,7 +481,7 @@ export default function MembersPage() {
           <div>
             <p className="text-lg font-semibold text-white">اعضای پشتیبانی</p>
             <p className="text-sm text-muted-soft">
-              تنها Creator می‌تواند اعضای جدید اضافه کند؛ لیست کاربران از
+              تنها خالق می‌تواند اعضای جدید اضافه کند؛ لیست کاربران از
               /cp/users خوانده می‌شود.
             </p>
           </div>
@@ -535,7 +536,7 @@ export default function MembersPage() {
                 </td>
                 <td className="px-5 py-4">
                   <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/80">
-                    {user.role}
+                    {translateRole(user.role)}
                   </span>
                 </td>
                 <td className="px-5 py-4">
