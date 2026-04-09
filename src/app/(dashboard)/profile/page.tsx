@@ -51,6 +51,8 @@ export default function ProfilePage() {
   const [birthdate, setBirthdate] = useState("");
   const [nationalCode, setNationalCode] = useState("");
   const [job, setJob] = useState("");
+  const [gender, setGender] = useState<"male" | "female">("male");
+  const [city, setCity] = useState("");
   const [homePhone, setHomePhone] = useState("");
   const [address, setAddress] = useState("");
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -76,6 +78,8 @@ export default function ProfilePage() {
       setBirthdate(user.birthdate || "");
       setNationalCode(user.nationalCode || "");
       setJob(user.job || "");
+      setGender(user.gender || "male");
+      setCity(user.city || "");
       setHomePhone(user.homePhone || "");
       setAddress(user.address || "");
       setLocation(user.homeLocation || null);
@@ -150,6 +154,8 @@ export default function ProfilePage() {
         birthdate: birthdate || undefined,
         nationalCode: nationalCode || undefined,
         job: job || undefined,
+        gender: gender || undefined,
+        city: city || undefined,
         homePhone: homePhone || undefined,
         address: address || undefined,
       };
@@ -376,6 +382,29 @@ export default function ProfilePage() {
               onChange={setJob}
               placeholder="عنوان شغلی"
             />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
+                  <FiUser className="text-xs" />
+                  جنسیت
+                </label>
+                <select
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value as "male" | "female")}
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-amber-500/40 focus:bg-white/8 hover:border-white/20 appearance-none cursor-pointer"
+                >
+                  <option value="male" className="bg-slate-900">آقا</option>
+                  <option value="female" className="bg-slate-900">خانم</option>
+                </select>
+              </div>
+              <InputField
+                label="شهر"
+                icon={<FiMapPin />}
+                value={city}
+                onChange={setCity}
+                placeholder="نام شهر"
+              />
+            </div>
           </div>
         </motion.section>
 
