@@ -71,9 +71,9 @@ export default function TenantsPage() {
       <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-inner shadow-black/20">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-lg font-semibold text-white">مدیریت شعبه‌ها</p>
+            <p className="text-lg font-semibold text-white">مدیریت شعب</p>
             <p className="text-sm text-muted-soft">
-              جستجو، ویرایش و حذف شعبه‌ها؛ صفحات مطابق پارامترهای q و page واکنش می‌دهند.
+              جستجو، ویرایش و حذف شعب؛ صفحات مطابق پارامترهای q و page واکنش می‌دهند.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-soft">
@@ -118,7 +118,7 @@ export default function TenantsPage() {
       </div>
 
       <TenantTable
-        title="لیست شعبه‌ها"
+        title="لیست شعب"
         description="ویرایش وضعیت یا حذف شعبه با احترام به صفحه‌بندی و جستجو"
         filters={filters}
         onEdit={handleEdit}

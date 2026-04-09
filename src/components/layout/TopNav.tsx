@@ -14,6 +14,7 @@ import {
   FiScissors,
   FiUsers,
   FiChevronLeft,
+  FiAward,
 } from "react-icons/fi";
 import { AddTenantModal } from "@/components/dashboard/AddTenantModal";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -21,10 +22,11 @@ import { useQuery } from "convex/react";
 import { api } from "@backend/api";
 import { translateRole } from "@/lib/translations";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/", label: "داشبورد", icon: FiHome },
-  { href: "/tenants", label: "شعبه‌ها", icon: FiScissors },
+  { href: "/tenants", label: "شعب", icon: FiScissors },
   { href: "/members", label: "اعضا", icon: FiUsers },
 ];
 
@@ -35,6 +37,11 @@ export function TopNav() {
   const user = useQuery(api.users.auth.me);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  const dynamicNavLinks = [
+    ...navLinks,
+    ...(user?.role === "creator" ? [{ href: "/plans", label: "پلان‌ها", icon: FiAward }] : [])
+  ];
 
   // Close drawer on route change
   useEffect(() => {
@@ -103,9 +110,15 @@ export function TopNav() {
           </button>
 
           {/* Logo mark — always show on mobile, hide brand text when hamburger takes space */}
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 via-amber-500 to-rose-500 text-lg font-bold text-white shadow-lg xs:hidden lg:flex lg:h-12 lg:w-12 lg:text-xl">
-            CP
-          </div>
+          <Link href="/" className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/5 border border-white/10 shadow-lg lg:flex lg:h-12 lg:w-12">
+            <Image 
+              src="/BestieeLogo.webp" 
+              alt="Bestiee Logo" 
+              width={48} 
+              height={48} 
+              className="object-contain p-1.5"
+            />
+          </Link>
 
           <div className="hidden xs:block">
             <p className="text-sm font-bold text-white md:text-base lg:text-lg">پنل مدیریت</p>
@@ -117,7 +130,7 @@ export function TopNav() {
 
         {/* Center Section: Navigation (desktop only) */}
         <nav className="hidden items-center gap-1 rounded-2xl border border-white/10 bg-white/5 p-1 lg:flex">
-          {navLinks.map((link) => {
+          {dynamicNavLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
@@ -239,7 +252,7 @@ export function TopNav() {
 
             {/* Nav links */}
             <nav className="flex flex-col gap-1 p-3">
-              {navLinks.map((link, i) => {
+              {dynamicNavLinks.map((link, i) => {
                 const isActive = pathname === link.href;
                 return (
                   <motion.div

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "ورود | Barbers CP",
+  title: "ورود | BestieeCP",
+  description: "ورود به پنل مدیریت سازمانی بستی",
 };
 
 export default function LoginLayout({
@@ -10,7 +11,7 @@ export default function LoginLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
+    <main className="flex min-h-screen items-stretch justify-center">
       {children}
     </main>
   );

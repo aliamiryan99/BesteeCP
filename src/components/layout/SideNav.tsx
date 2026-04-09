@@ -13,7 +13,7 @@ const navSections = [
     title: "مدیریت شعب",
     items: [
       { href: "/", label: "خانه", icon: FiHome },
-      { href: "/tenants", label: "شعبه‌ها", icon: FiScissors },
+      { href: "/tenants", label: "شعب", icon: FiScissors },
       { href: "/members", label: "اعضا", icon: FiBarChart2 },
     ],
   },

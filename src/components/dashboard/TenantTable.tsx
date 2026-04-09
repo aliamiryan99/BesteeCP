@@ -31,8 +31,8 @@ type Props = {
 };
 
 export function TenantTable({
-  title = 'لیست شعبه‌ها',
-  description = 'نمایش آخرین شعبه‌ها ثبت شده به همراه وضعیت',
+  title = 'لیست شعب',
+  description = 'نمایش آخرین شعب ثبت شده به همراه وضعیت',
   filters,
   onEdit,
   onDelete,

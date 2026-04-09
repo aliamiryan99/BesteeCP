@@ -559,7 +559,7 @@ export default function ProfilePage() {
                   disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
                   className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-500 px-5 py-3 text-sm font-bold text-white transition hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {savingPassword ? <FiLoader className="animate-spin" /> : <FiCheck />}
+                  {savingPassword ? <FiLoader className="animate-spin" /> : <FiLock />}
                   {savingPassword ? "در حال تغییر..." : "تغییر رمز عبور"}
                 </button>
                 <button

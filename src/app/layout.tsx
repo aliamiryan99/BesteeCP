@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bestee CP",
+  title: "Bestiee CP",
   description: "Admin dashboard panel to manage the barbers",
   icons: [
     {

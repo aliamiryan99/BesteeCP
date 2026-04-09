@@ -75,14 +75,14 @@ export default function Home() {
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <KpiCard
-          title="کل شعبه‌ها"
+          title="کل شعب"
           value={totalTenants}
           icon={<FiUsers />}
           subtitle="مجموع ثبت شده در سیستم"
           loading={loadingMetrics}
         />
         <KpiCard
-          title="شعبه‌ها فعال"
+          title="شعب فعال"
           value={aliveTenants}
           icon={<FiMail />}
           subtitle="دارای وضعیت alive"
