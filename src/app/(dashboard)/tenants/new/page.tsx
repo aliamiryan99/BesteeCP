@@ -31,17 +31,13 @@ import {
   FiLayout,
   FiUser,
   FiFileText,
+  FiPlus,
+  FiTrash2,
+  FiUsers,
+  FiSearch,
 } from "react-icons/fi";
 
-// Dynamically import the map component (Leaflet requires window)
-const LocationPicker = dynamic(() => import("@/components/profile/LocationPicker"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-[350px] items-center justify-center rounded-2xl bg-white/5 border border-white/10">
-      <FiLoader className="animate-spin text-2xl text-white/40" />
-    </div>
-  ),
-});
+const LocationPicker = dynamic(() => import("@/components/profile/LocationPicker"), { ssr: false });
 
 // ─── Step indicator config ────────────────────────────────────────────────────
 const STEPS = [
@@ -49,87 +45,33 @@ const STEPS = [
   { key: "content", label: "محتوای سایت", icon: <FiLayout /> },
   { key: "location", label: "موقعیت و مجوز", icon: <FiMapPin /> },
   { key: "settings", label: "تنظیمات و شبکه‌ها", icon: <FiSettings /> },
+  { key: "members", label: "مدیران و پرسنل", icon: <FiUsers /> },
 ] as const;
 
-// ─── Persian weekday labels ───────────────────────────────────────────────────
-const WEEKDAY_LABELS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه"];
 
-// ─── Input Field ──────────────────────────────────────────────────────────────
-function InputField({
-  label,
-  icon,
-  value,
-  onChange,
-  placeholder,
-  required,
-  dir,
-  type = "text",
-  error,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  required?: boolean;
-  dir?: string;
-  type?: string;
-  error?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
-        {icon}
-        {label}
-        {required && <span className="text-rose-400">*</span>}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        dir={dir}
-        className={`w-full rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:bg-white/8 hover:border-white/20 ${
-          error ? "border-rose-500/50 focus:border-rose-400" : "border-white/10 focus:border-amber-500/40"
-        }`}
-      />
-      {error && <p className="mt-1 text-[11px] text-rose-400">{error}</p>}
-    </div>
-  );
+const WEEKDAY_LABELS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"];
+
+interface MemberState {
+  type: "existing" | "new";
+  userId?: string;
+  name?: string; // Cache existing name for display
+  searchQuery?: string;
+  newUser: {
+    name: string;
+    phone: string;
+    email: string;
+    gender: "male" | "female";
+    city: string;
+  };
 }
 
-// ─── Textarea ─────────────────────────────────────────────────────────────────
-function TextareaField({
-  label,
-  icon,
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-}: {
-  label: string;
-  icon?: React.ReactNode;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rows?: number;
-}) {
-  return (
-    <div>
-      <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
-        {icon}
-        {label}
-      </label>
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-amber-500/40 focus:bg-white/8"
-      />
-    </div>
-  );
-}
+const EMPTY_NEW_USER = {
+  name: "",
+  phone: "",
+  email: "",
+  gender: "male" as const,
+  city: "تهران",
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function NewTenantPage() {
@@ -141,7 +83,7 @@ export default function NewTenantPage() {
   // Step control
   const [currentStep, setCurrentStep] = useState(0);
 
-  // ── Step 1: Basic Info ─────────────────────────────────────────────────
+  // ... (previous state)
   const [name, setName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [title, setTitle] = useState("");
@@ -149,27 +91,22 @@ export default function NewTenantPage() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
 
-  // Fetch available domains filtered by tenant type (reactive whenever type changes)
   const availableDomains = useQuery(api.tenants.tenants.listMainDomains, { tenantType: type });
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
-  // If selection no longer valid after type change, reset
   const activeDomain = availableDomains?.some((d: { domain: string }) => d.domain === selectedDomain)
     ? selectedDomain
     : (availableDomains?.[0]?.domain ?? null);
   const defaultMain = activeDomain ?? process.env.NEXT_PUBLIC_BASE_DOMAIN ?? "bestiee.ir";
 
-  // ── Step 2: Content ────────────────────────────────────────────────────
   const [heroTitle, setHeroTitle] = useState("");
   const [heroSubTitle, setHeroSubTitle] = useState("");
   const [aboutUsText, setAboutUsText] = useState("");
 
-  // ── Step 3: Location & Certificate ─────────────────────────────────────
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [certificateFile, setCertificateFile] = useState<File | null>(null);
   const [certificatePreview, setCertificatePreview] = useState<string | null>(null);
   const certInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Step 4: Settings & Socials ─────────────────────────────────────────
   const [telegram, setTelegram] = useState("");
   const [instagram, setInstagram] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -178,6 +115,11 @@ export default function NewTenantPage() {
   const [endHour, setEndHour] = useState(21);
   const [endMinute, setEndMinute] = useState(0);
   const [workingDays, setWorkingDays] = useState([true, true, true, true, true, true, false]);
+  const [breaks, setBreaks] = useState([{ startTime: { hour: 13, minute: 0 }, endTime: { hour: 14, minute: 0 } }]);
+
+  // ── Step 5: Members ──────────────────────────────────────────────────
+  const [owners, setOwners] = useState<MemberState[]>([{ type: "new", newUser: { ...EMPTY_NEW_USER } }]);
+  const [staff, setStaff] = useState<MemberState[]>([]);
 
   // ── UI State ────────────────────────────────────────────────────────────
   const [submitting, setSubmitting] = useState(false);
@@ -197,13 +139,32 @@ export default function NewTenantPage() {
       if (!location) errs.location = "تعیین موقعیت مکانی اجباری است";
       if (!certificateFile && !certificatePreview) errs.certificate = "آپلود تصویر مجوز اجباری است";
     }
+    if (step === 4) {
+      if (owners.length === 0) errs.owners = "حداقل یک مدیر برای شعبه الزامی است";
+      owners.forEach((o, i) => {
+        if (o.type === "new") {
+          if (!o.newUser.name.trim()) errs[`owner_${i}_name`] = "نام مدیر الزامی است";
+          if (!o.newUser.phone.trim()) errs[`owner_${i}_phone`] = "تلفن مدیر الزامی است";
+        } else if (!o.userId) {
+          errs[`owner_${i}_userId`] = "مدیر انتخاب نشده است";
+        }
+      });
+      staff.forEach((s, i) => {
+        if (s.type === "new") {
+          if (!s.newUser.name.trim()) errs[`staff_${i}_name`] = "نام پرسنل الزامی است";
+          if (!s.newUser.phone.trim()) errs[`staff_${i}_phone`] = "تلفن پرسنل الزامی است";
+        } else if (!s.userId) {
+          errs[`staff_${i}_userId`] = "پرسنل انتخاب نشده است";
+        }
+      });
+    }
     return errs;
   };
 
   const canProceed = useMemo(() => {
     return Object.keys(validateStep(currentStep)).length === 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, name, subdomain, title, location, certificateFile, certificatePreview]);
+  }, [currentStep, name, subdomain, title, location, certificateFile, certificatePreview, owners, staff]);
 
   const handleNext = () => {
     const errs = validateStep(currentStep);
@@ -241,22 +202,20 @@ export default function NewTenantPage() {
 
   // Submit
   const handleSubmit = async () => {
-    // Final validation across all steps
     const allErrors: Record<string, string> = {};
     for (let i = 0; i < STEPS.length; i++) {
-      Object.assign(allErrors, validateStep(i));
+        Object.assign(allErrors, validateStep(i));
     }
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
-      // Jump to first step with error
       if (allErrors.name || allErrors.subdomain || allErrors.title) setCurrentStep(0);
       else if (allErrors.location || allErrors.certificate) setCurrentStep(2);
+      else if (allErrors.owners || allErrors.staff) setCurrentStep(4);
       return;
     }
 
     setSubmitting(true);
     try {
-      // Upload certificate image
       let certificateImageId: string | undefined;
       if (certificateFile) {
         const uploadUrl = await generateUploadUrl();
@@ -268,6 +227,14 @@ export default function NewTenantPage() {
         const { storageId } = await result.json();
         certificateImageId = storageId;
       }
+
+      const mapMember = (m: MemberState) => ({
+        userId: m.type === "existing" ? (m.userId as any) : undefined,
+        newUser: m.type === "new" ? {
+          ...m.newUser,
+          password: m.newUser.phone, // Default password is phone for convenience
+        } : undefined
+      });
 
       const payload: any = {
         name: name.trim(),
@@ -287,6 +254,15 @@ export default function NewTenantPage() {
           instagram: instagram.trim() || undefined,
           whatsapp: whatsapp.trim() || undefined,
         },
+        startWorkingTime: { hour: startHour, minute: startMinute },
+        endWorkingTime: { hour: endHour, minute: endMinute },
+        workingWeekdays: workingDays,
+        breaks: breaks.map(b => ({
+            startTime: { hour: b.startTime.hour, minute: b.startTime.minute },
+            endTime: { hour: b.endTime.hour, minute: b.endTime.minute }
+        })),
+        owners: owners.map(mapMember),
+        staff: staff.map(mapMember),
       };
 
       await createTenant(payload);
@@ -303,6 +279,28 @@ export default function NewTenantPage() {
     setWorkingDays((prev) => {
       const next = [...prev];
       next[index] = !next[index];
+      return next;
+    });
+  };
+
+  const addBreak = () => {
+    setBreaks([...breaks, { startTime: { hour: 13, minute: 0 }, endTime: { hour: 14, minute: 0 } }]);
+  };
+
+  const removeBreak = (index: number) => {
+    setBreaks(breaks.filter((_, i) => i !== index));
+  };
+
+  const updateBreak = (index: number, field: "startTime" | "endTime", subField: "hour" | "minute", value: number) => {
+    setBreaks(prev => {
+      const next = [...prev];
+      next[index] = {
+        ...next[index],
+        [field]: {
+          ...next[index][field],
+          [subField]: value
+        }
+      };
       return next;
     });
   };
@@ -789,6 +787,187 @@ export default function NewTenantPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Break times */}
+                <div className="mt-8">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-white/50">
+                        <FiClock className="text-amber-400/60" />
+                        زمان استراحت
+                      </label>
+                      <p className="text-[10px] text-white/20 mt-0.5">ساعاتی که نوبت‌دهی متوقف می‌شود</p>
+                    </div>
+                    <button
+                      onClick={addBreak}
+                      className="cursor-pointer flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] font-bold text-white/50 transition hover:bg-white/10 hover:text-white"
+                    >
+                      <FiPlus />
+                      افزودن استراحت
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {breaks.length === 0 && (
+                      <div className="rounded-2xl border border-white/5 bg-white/2 p-4 text-center">
+                        <p className="text-xs text-white/20">هیچ زمان استراحتی تنظیم نشده است</p>
+                      </div>
+                    )}
+                    {breaks.map((b, i) => (
+                      <div key={i} className="flex items-center gap-4 group">
+                        <div className="flex-1 grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-white/3 p-3 transition group-hover:border-white/20">
+                          {/* Break Start */}
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] text-white/30 whitespace-nowrap">شروع:</span>
+                             <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={0} max={23}
+                                  value={b.startTime.hour}
+                                  onChange={(e) => updateBreak(i, "startTime", "hour", Number(e.target.value))}
+                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                                />
+                                <span className="text-white/20">:</span>
+                                <input
+                                  type="number"
+                                  min={0} max={59}
+                                  value={b.startTime.minute}
+                                  onChange={(e) => updateBreak(i, "startTime", "minute", Number(e.target.value))}
+                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                                />
+                             </div>
+                          </div>
+                          {/* Break End */}
+                          <div className="flex items-center gap-2">
+                             <span className="text-[10px] text-white/30 whitespace-nowrap">پایان:</span>
+                             <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={0} max={23}
+                                  value={b.endTime.hour}
+                                  onChange={(e) => updateBreak(i, "endTime", "hour", Number(e.target.value))}
+                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                                />
+                                <span className="text-white/20">:</span>
+                                <input
+                                  type="number"
+                                  min={0} max={59}
+                                  value={b.endTime.minute}
+                                  onChange={(e) => updateBreak(i, "endTime", "minute", Number(e.target.value))}
+                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                                />
+                             </div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeBreak(i)}
+                          className="cursor-pointer flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 opacity-0 group-hover:opacity-100 transition hover:bg-rose-500 hover:text-white"
+                        >
+                          <FiTrash2 className="text-sm" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* ── Step 4: Members ─────────────────────────── */}
+          {currentStep === 4 && (
+            <div className="flex flex-col gap-8">
+              {/* Owners Section */}
+              <div className="rounded-3xl border border-white/8 bg-gradient-to-br from-slate-800/60 to-slate-900/80 p-6 shadow-xl">
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/20">
+                      <FiUser className="text-lg text-amber-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">مدیران شعبه (Owners)</h2>
+                      <p className="text-xs text-white/40">حداقل یک مدیر برای مدیریت شعبه الزامی است</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setOwners([...owners, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    className="cursor-pointer flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition"
+                  >
+                    <FiPlus />
+                    افزودن مدیر جدید
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  {owners.map((owner, idx) => (
+                    <MemberCard
+                      key={idx}
+                      label="مدیر"
+                      member={owner}
+                      index={idx}
+                      errors={errors}
+                      prefix="owner"
+                      onRemove={() => setOwners(owners.filter((_, i) => i !== idx))}
+                      onChange={(updated) => {
+                        const next = [...owners];
+                        next[idx] = updated;
+                        setOwners(next);
+                      }}
+                    />
+                  ))}
+                  {errors.owners && (
+                    <p className="text-xs text-rose-400 flex items-center gap-1.5 bg-rose-400/5 p-3 rounded-xl border border-rose-400/10">
+                      <FiAlertCircle />
+                      {errors.owners}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Staff Section */}
+              <div className="rounded-3xl border border-white/8 bg-gradient-to-br from-slate-800/60 to-slate-900/80 p-6 shadow-xl">
+                <div className="mb-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/20">
+                      <FiUsers className="text-lg text-blue-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-white">پرسنل و آرایشگران (Staff)</h2>
+                      <p className="text-xs text-white/40">لیست نفراتی که خدمات ارائه می‌دهند</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setStaff([...staff, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    className="cursor-pointer flex items-center gap-2 rounded-xl bg-blue-500/10 px-3 py-2 text-xs font-bold text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition"
+                  >
+                    <FiPlus />
+                    افزودن پرسنل
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  {staff.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center p-8 rounded-2xl border border-dashed border-white/10 bg-white/2">
+                      <FiUsers className="text-3xl text-white/10 mb-2" />
+                      <p className="text-sm text-white/20">هیچ پرسنلی اضافه نشده است</p>
+                    </div>
+                  ) : (
+                    staff.map((s, idx) => (
+                      <MemberCard
+                        key={idx}
+                        label="پرسنل"
+                        member={s}
+                        index={idx}
+                        errors={errors}
+                        prefix="staff"
+                        onRemove={() => setStaff(staff.filter((_, i) => i !== idx))}
+                        onChange={(updated) => {
+                          const next = [...staff];
+                          next[idx] = updated;
+                          setStaff(next);
+                        }}
+                      />
+                    ))
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -796,44 +975,335 @@ export default function NewTenantPage() {
       </AnimatePresence>
 
       {/* ── Navigation Buttons ────────────────────────────── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
         <button
           onClick={handlePrev}
-          disabled={currentStep === 0}
-          className="cursor-pointer flex items-center gap-2 rounded-2xl border border-white/10 px-5 py-2.5 text-sm font-bold text-white/60 transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+          disabled={currentStep === 0 || submitting}
+          className="cursor-pointer flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed"
         >
           <FiArrowRight />
           مرحله قبل
         </button>
 
-        {currentStep < STEPS.length - 1 ? (
+        <div className="flex items-center gap-3">
+          {currentStep < STEPS.length - 1 ? (
+            <button
+              onClick={handleNext}
+              disabled={!canProceed || submitting}
+              className="cursor-pointer group flex items-center gap-2 rounded-2xl bg-white px-8 py-3 text-sm font-black text-slate-900 transition hover:bg-orange-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:grayscale"
+            >
+              مرحله بعد
+              <FiArrowLeft className="transition-transform group-hover:-translate-x-1" />
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={!canProceed || submitting}
+              className="cursor-pointer flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-rose-600 px-10 py-3 text-sm font-black text-white shadow-lg shadow-orange-500/20 transition hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              {submitting ? (
+                <>
+                  <FiLoader className="animate-spin" />
+                  در حال ثبت...
+                </>
+              ) : (
+                <>
+                  ثبت نهایی شعبه
+                  <FiCheck />
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-Components ───────────────────────────────────────────────────────────
+
+function MemberCard({
+  label,
+  member,
+  index,
+  errors,
+  prefix,
+  onRemove,
+  onChange,
+}: {
+  label: string;
+  member: MemberState;
+  index: number;
+  errors: Record<string, string>;
+  prefix: string;
+  onRemove: () => void;
+  onChange: (m: MemberState) => void;
+}) {
+  return (
+    <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-white/20">
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs font-bold text-white/60">
+            {index + 1}
+          </div>
+          <h3 className="text-sm font-bold text-white/80">{label} {member.name || ""}</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Type Toggle */}
+          <div className="flex rounded-lg bg-white/5 p-1">
+            <button
+              onClick={() => onChange({ ...member, type: "existing", searchQuery: "" })}
+              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${
+                member.type === "existing" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
+              }`}
+            >
+              کاربر موجود
+            </button>
+            <button
+              onClick={() => onChange({ ...member, type: "new", newUser: { ...EMPTY_NEW_USER } })}
+              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${
+                member.type === "new" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
+              }`}
+            >
+              کاربر جدید
+            </button>
+          </div>
           <button
-            onClick={handleNext}
-            className="cursor-pointer flex items-center gap-2 rounded-2xl bg-gradient-to-l from-orange-500 via-amber-400 to-rose-500 px-6 py-2.5 text-sm font-bold text-black shadow-lg shadow-orange-500/20 transition hover:shadow-orange-500/40 hover:scale-105 active:scale-95"
+            onClick={onRemove}
+            className="cursor-pointer flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition"
           >
-            مرحله بعد
-            <FiArrowLeft />
+            <FiTrash2 size={14} />
           </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="cursor-pointer flex items-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-500 to-teal-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:shadow-emerald-500/40 hover:scale-105 active:scale-95 disabled:opacity-70"
-          >
-            {submitting ? (
-              <>
-                <FiLoader className="animate-spin" />
-                در حال ثبت...
-              </>
-            ) : (
-              <>
-                <FiCheck />
-                ثبت نهایی شعبه
-              </>
-            )}
-          </button>
+        </div>
+      </div>
+
+      {member.type === "existing" ? (
+        <UserSearchField
+          value={member.searchQuery || ""}
+          selectedUserName={member.name}
+          onSelect={(user: any) => onChange({ ...member, userId: user._id, name: user.name, searchQuery: user.name })}
+          onChange={(q: string) => onChange({ ...member, searchQuery: q })}
+          error={errors[`${prefix}_${index}_userId`]}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <InputField
+            label="نام و نام خانوادگی"
+            icon={<FiUser />}
+            value={member.newUser.name}
+            onChange={(v: string) => onChange({ ...member, name: v, newUser: { ...member.newUser, name: v } })}
+            placeholder="مثلاً: علی رضایی"
+            error={errors[`${prefix}_${index}_name`]}
+            required
+          />
+          <InputField
+            label="شماره موبایل"
+            icon={<FiPhone />}
+            value={member.newUser.phone}
+            onChange={(v: string) => onChange({ ...member, newUser: { ...member.newUser, phone: v } })}
+            placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+            dir="ltr"
+            error={errors[`${prefix}_${index}_phone`]}
+            required
+          />
+          <InputField
+            label="ایمیل (اختیاری)"
+            icon={<FiMessageCircle />}
+            value={member.newUser.email}
+            onChange={(v: string) => onChange({ ...member, newUser: { ...member.newUser, email: v } })}
+            placeholder="info@example.com"
+            dir="ltr"
+          />
+          <div className="md:col-span-1">
+             <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
+               <FiUser />
+               جنسیت
+             </label>
+             <div className="flex gap-2">
+                <button
+                  onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "male" } })}
+                  className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${
+                    member.newUser.gender === "male" ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-white/30"
+                  }`}
+                >
+                  آقا
+                </button>
+                <button
+                  onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "female" } })}
+                  className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${
+                    member.newUser.gender === "female" ? "border-pink-500/40 bg-pink-500/10 text-pink-300" : "border-white/10 bg-white/5 text-white/30"
+                  }`}
+                >
+                  خانم
+                </button>
+             </div>
+          </div>
+          <InputField
+            label="شهر"
+            icon={<FiMapPin />}
+            value={member.newUser.city}
+            onChange={(v: string) => onChange({ ...member, newUser: { ...member.newUser, city: v } })}
+            placeholder="مثلاً: تهران"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UserSearchField({
+  value,
+  selectedUserName,
+  onSelect,
+  onChange,
+  error,
+}: {
+  value: string;
+  selectedUserName?: string;
+  onSelect: (user: any) => void;
+  onChange: (q: string) => void;
+  error?: string;
+}) {
+  const [showResults, setShowResults] = useState(false);
+  const results = useQuery(api.tenants.tenants.searchUsers, { query: value });
+
+  return (
+    <div className="relative">
+      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${
+        error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
+      }`}>
+        <FiSearch className="text-white/30" />
+        <input
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setShowResults(true);
+          }}
+          onFocus={() => setShowResults(true)}
+          placeholder="جستجو با نام یا شماره تلفن (حداقل ۳ حرف)..."
+          className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/20"
+        />
+        {selectedUserName && (
+           <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
+             <FiCheck />
+             {selectedUserName}
+           </div>
         )}
       </div>
+      
+      {showResults && value.length >= 3 && (
+        <div className="absolute top-full left-0 right-0 z-[100] mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#1e293b]/90 shadow-2xl backdrop-blur-3xl ring-1 ring-white/5">
+          {!results ? (
+            <div className="p-4 text-center text-xs text-white/30 italic">در حال جستجو...</div>
+          ) : results.length === 0 ? (
+            <div className="p-4 text-center text-xs text-white/30 italic">کاربری یافت نشد</div>
+          ) : (
+            <div className="max-h-60 overflow-y-auto p-2">
+              {results.map((user: any) => (
+                <button
+                  key={user._id}
+                  onClick={() => {
+                    onSelect(user);
+                    setShowResults(false);
+                  }}
+                  className="cursor-pointer flex w-full items-center justify-between rounded-xl px-4 py-3 text-right transition hover:bg-white/5"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs text-white/40">
+                       <FiUser />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-white">{user.name}</p>
+                      <p className="text-[10px] text-white/30 font-mono" dir="ltr">{user.phone}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-white/5 px-2 py-1 text-[9px] font-bold text-white/40 uppercase">
+                    {user.role}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {error && <p className="mt-1 text-[11px] text-rose-400">{error}</p>}
+      
+      {showResults && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowResults(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+interface InputFieldProps {
+  label: string;
+  icon: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  dir?: "ltr" | "rtl";
+  type?: string;
+}
+
+function InputField({ label, icon, value, onChange, placeholder, required, error, dir, type = "text" }: InputFieldProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex items-center gap-1.5 text-xs font-bold text-white/50">
+        <span className="text-orange-400/60">{icon}</span>
+        {label}
+        {required && <span className="text-rose-400">*</span>}
+      </label>
+      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${
+        error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
+      }`}>
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          dir={dir}
+          className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/20"
+        />
+      </div>
+      {error && <p className="text-[10px] text-rose-400 mt-1">{error}</p>}
+    </div>
+  );
+}
+
+interface TextareaFieldProps {
+  label: string;
+  icon: React.ReactNode;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  rows?: number;
+}
+
+function TextareaField({ label, icon, value, onChange, placeholder, required, error, rows = 3 }: TextareaFieldProps) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex items-center gap-1.5 text-xs font-bold text-white/50">
+        <span className="text-orange-400/60">{icon}</span>
+        {label}
+        {required && <span className="text-rose-400">*</span>}
+      </label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        className={`rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:bg-white/8 min-h-[100px] ${
+          error ? "border-rose-500/50" : "border-white/10 focus:border-orange-500/40"
+        } placeholder:text-white/20`}
+      />
+      {error && <p className="text-[10px] text-rose-400 mt-1">{error}</p>}
     </div>
   );
 }

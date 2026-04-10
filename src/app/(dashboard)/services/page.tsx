@@ -51,6 +51,174 @@ function getTypeConfig(type: TenantType) {
   return TYPE_CONFIG.null;
 }
 
+const SERVICE_ICONS = [
+  // --- Hair & Barber ---
+  { emoji: "✂️", label: "Scissors", tags: ["cut", "hair", "barber", "scissors", "trim"] },
+  { emoji: "💇‍♂️", label: "Man Haircut", tags: ["man", "hair", "style", "cut"] },
+  { emoji: "💇‍♀️", label: "Woman Haircut", tags: ["woman", "hair", "style", "cut"] },
+  { emoji: "🪮", label: "Comb", tags: ["brush", "style", "hair", "comb"] },
+  { emoji: "💈", label: "Barber Pole", tags: ["barber", "store", "shop"] },
+  { emoji: "🧔", label: "Beard", tags: ["shave", "man", "beard", "trim"] },
+  { emoji: "🧔‍♂️", label: "Beard Grooming", tags: ["shave", "beard", "man"] },
+  { emoji: "🚿", label: "Shower", tags: ["wash", "water", "rinse"] },
+  { emoji: "🫧", label: "Bubbles", tags: ["wash", "shampoo", "clean"] },
+  { emoji: "🧴", label: "Lotion", tags: ["cream", "skincare", "oil", "shampoo"] },
+  { emoji: "🎨", label: "Color Palette", tags: ["color", "tint", "dye", "highlights"] },
+  
+  // --- Face & Beauty ---
+  { emoji: "💆‍♂️", label: "Man Face Massage", tags: ["relax", "face", "massage", "facial"] },
+  { emoji: "💆‍♀️", label: "Woman Face Massage", tags: ["relax", "face", "massage", "facial"] },
+  { emoji: "🧖‍♂️", label: "Man Sauna/Facial", tags: ["facial", "steam", "spa", "skin"] },
+  { emoji: "🧖‍♀️", label: "Woman Sauna/Facial", tags: ["facial", "steam", "spa", "skin"] },
+  { emoji: "💄", label: "Lipstick", tags: ["makeup", "face", "beauty", "cosmetics"] },
+  { emoji: "💅", label: "Nail", tags: ["manicure", "pedicure", "nail", "polish"] },
+  { emoji: "🪞", label: "Mirror", tags: ["makeup", "style", "check"] },
+  { emoji: "👄", label: "Lips", tags: ["makeup", "injection", "filler"] },
+  { emoji: "👁️", label: "Eye", tags: ["brows", "lashes", "eyebrows"] },
+  { emoji: "✍️", label: "Threading", tags: ["brows", "threading", "edit"] },
+  
+  // --- Body & Wellness ---
+  { emoji: "💆", label: "Body Massage", tags: ["massage", "wellness", "relax"] },
+  { emoji: "🦶", label: "Foot", tags: ["pedicure", "massage", "reflexology"] },
+  { emoji: "☀️", label: "Sun", tags: ["tanning", "solarium"] },
+  { emoji: "👒", label: "Hat", tags: ["style", "fashion"] },
+  { emoji: "🌿", label: "Natural", tags: ["organic", "spa", "herbal"] },
+  { emoji: "🕯️", label: "Candle", tags: ["spa", "relax", "massage"] },
+  { emoji: "🧊", label: "Ice", tags: ["cold", "treatment", "cryo"] },
+  { emoji: "🔥", label: "Hot", tags: ["stone", "waxing", "hot"] },
+  
+  // --- Miscellaneous ---
+  { emoji: "✨", label: "Sparkles", tags: ["special", "shine", "premium", "vip"] },
+  { emoji: "💎", label: "Diamond", tags: ["premium", "luxury", "vip"] },
+  { emoji: "🤝", label: "Consultation", tags: ["meeting", "advisor", "talk"] },
+  { emoji: "📅", label: "Appointment", tags: ["calendar", "schedule"] },
+  { emoji: "🏷️", label: "Price", tags: ["off", "discount", "sale"] },
+  { emoji: "⚡", label: "Fast", tags: ["express", "quick"] },
+  { emoji: "🌈", label: "Rainbow", tags: ["color", "fun", "art"] },
+];
+
+function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [search, setSearch] = useState("");
+  const [hoveredIcon, setHoveredIcon] = useState<any>(null);
+
+  const selectedItem = useMemo(() => SERVICE_ICONS.find(i => i.emoji === value), [value]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return SERVICE_ICONS;
+    const q = search.toLowerCase();
+    return SERVICE_ICONS.filter(i => 
+      i.label.toLowerCase().includes(q) || 
+      i.tags.some(t => t.includes(q))
+    );
+  }, [search]);
+
+  return (
+    <div className="relative w-full">
+      <div 
+        onClick={() => setShowPicker(!showPicker)}
+        className="cursor-pointer group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 py-2 pl-4 pr-2 transition hover:bg-white/10 focus-within:border-amber-500/40 h-[56px] w-full"
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900 border border-white/5 text-2xl shadow-inner group-hover:scale-110 transition shrink-0">
+          {value || "✂️"}
+        </div>
+        
+        <div className="flex flex-1 flex-col justify-center min-w-0 pr-1">
+            {selectedItem ? (
+                <>
+                    <span className="text-right text-[11px] font-black text-white truncate leading-tight mb-0.5">
+                        {selectedItem.label}
+                    </span>
+                    <div className="flex flex-nowrap items-center gap-1 justify-end overflow-hidden w-full whitespace-nowrap">
+                        {selectedItem.tags.slice(0, 4).map(t => (
+                            <span key={t} className="text-[8px] text-orange-400/60 lowercase shrink-0">#{t}</span>
+                        ))}
+                    </div>
+                </>
+            ) : (
+                <span className="text-right text-xs text-white/40 font-medium">
+                    انتخاب آیکون سرویس...
+                </span>
+            )}
+        </div>
+
+        <FiChevronDown className={`text-white/20 transition shrink-0 ${showPicker ? "rotate-180" : ""}`} />
+      </div>
+
+      <AnimatePresence>
+        {showPicker && (
+          <>
+            <div className="fixed inset-0 z-[60]" onClick={() => setShowPicker(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="absolute top-full left-0 right-0 z-[70] mt-2 flex flex-col rounded-3xl border border-white/10 bg-slate-950 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] backdrop-blur-3xl ring-1 ring-white/10"
+            >
+              <div className="p-3 border-b border-white/5 bg-white/3 rounded-t-3xl">
+                 {/* Dynamic Info Banner */}
+                 <div className="mb-3 flex items-center gap-3 h-12 bg-white/5 rounded-2xl px-3 border border-white/5 transition-all">
+                    {hoveredIcon ? (
+                        <>
+                            <div className="text-2xl animate-bounce-short">{hoveredIcon.emoji}</div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-[11px] font-black text-white truncate">{hoveredIcon.label}</span>
+                                <div className="flex gap-1 overflow-hidden">
+                                    {hoveredIcon.tags.map((t: string) => (
+                                        <span key={t} className="text-[8px] text-orange-400/70 lowercase">#{t}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex items-center gap-2 text-white/20">
+                            <FiScissors className="text-sm" />
+                            <span className="text-[10px] font-medium italic">ماوس را روی آیکون‌ها ببرید...</span>
+                        </div>
+                    )}
+                 </div>
+
+                 <div className="relative">
+                    <FiSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 text-xs" />
+                    <input 
+                      autoFocus
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="جستجو (انگلیسی)..."
+                      className="w-full rounded-xl bg-white/5 py-2.5 pr-8 pl-3 text-xs text-white outline-none placeholder:text-white/10 focus:bg-white/10"
+                    />
+                 </div>
+              </div>
+
+              <div className="max-h-[200px] overflow-y-auto p-3 scrollbar-hide rounded-b-3xl">
+                <div className="grid grid-cols-4 gap-2">
+                  {filtered.map((item) => (
+                    <button
+                        key={item.emoji}
+                        onMouseEnter={() => setHoveredIcon(item)}
+                        onMouseLeave={() => setHoveredIcon(null)}
+                        onClick={() => {
+                            onChange(item.emoji);
+                            setShowPicker(false);
+                        }}
+                        className={`cursor-pointer flex h-12 items-center justify-center rounded-xl text-2xl transition-all duration-200 hover:bg-white/10 hover:scale-110 active:scale-95 ${value === item.emoji ? "select-none bg-amber-500/20 ring-1 ring-amber-500/30 shadow-[0_0_20px_rgba(245,158,11,0.15)]" : ""}`}
+                    >
+                        {item.emoji}
+                    </button>
+                  ))}
+                  {filtered.length === 0 && (
+                    <div className="col-span-4 py-8 text-center text-xs text-white/20 italic">آیکونی یافت نشد</div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function formatDuration(minutes: number) {
   if (minutes < 60) return `${minutes} دقیقه`;
   const h = Math.floor(minutes / 60);
@@ -161,21 +329,20 @@ function ServiceModal({
                 step={5}
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white text-center outline-none transition focus:border-amber-500/40"
+                className="w-full h-[56px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white text-center outline-none transition focus:border-amber-500/40"
                 dir="ltr"
               />
               <p className="mt-1 text-[10px] text-white/30 text-center">{formatDuration(duration)}</p>
             </div>
             <div>
               <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
-                آیکون (Emoji)
+                آیکون و پیش‌نمایش
               </label>
-              <input
+              <IconPicker 
                 value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white text-center outline-none transition focus:border-amber-500/40"
-                placeholder="✂️"
+                onChange={setIcon}
               />
+              <p className="mt-1 text-[10px] opacity-0">spacer</p>
             </div>
           </div>
 
@@ -329,7 +496,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
       className={`cursor-pointer rounded-2xl border px-4 py-1.5 text-xs font-bold transition-all ${active
         ? "border-orange-500/40 bg-orange-500/15 text-orange-300"
         : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -430,7 +597,7 @@ export default function PredefinedServicesPage() {
               <FiScissors className="text-xl text-orange-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-white">سرویس‌های پیش‌فرض</h1>
+              <h1 className="text-2xl font-black text-white">سرویس‌های از پیش تعریف شده</h1>
               <p className="text-sm text-white/40 mt-0.5">قالب‌های آماده برای آرایشگاه‌های مردانه و زنانه</p>
             </div>
           </div>
