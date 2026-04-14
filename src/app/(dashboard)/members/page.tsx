@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   FiCheck,
@@ -28,9 +28,13 @@ import {
 } from "react-icons/fi";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
+import { Doc } from "@backend/dataModel";
+
+type City = Doc<"cities">;
 import { useToastStore } from "@/store/toastStore";
 import { translateRole } from "@/lib/translations";
 import LevelCircle from "@/components/profile/LevelCircle";
+import CitySelect from "@/components/common/CitySelect";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type StaffUser = {
@@ -48,7 +52,7 @@ type StaffUser = {
   score?: number;
   xp?: number;
   level?: number;
-  city: string;
+  cityId?: string;
   gender: "male" | "female";
   profilePictureUrl?: string;
   job?: string;
@@ -136,6 +140,7 @@ function MemberCard({
   onDelete,
   actionLoading,
   deletingId,
+  cityMap,
 }: {
   user: StaffUser;
   isCurrentUser: boolean;
@@ -144,6 +149,7 @@ function MemberCard({
   onDelete: (user: StaffUser) => void;
   actionLoading: string | null;
   deletingId: string | null;
+  cityMap: Record<string, string>;
 }) {
   const role = ROLE_CONFIG[user.role];
   const isActing = actionLoading === user._id;
@@ -222,10 +228,10 @@ function MemberCard({
             <span dir="ltr">{user.email}</span>
           </div>
         )}
-        {user.city && (
+        {user.cityId && cityMap[user.cityId] && (
           <div className="flex items-center gap-2 text-xs text-white/50">
             <FiMapPin className="text-white/30 shrink-0" />
-            <span>{user.city}</span>
+            <span>{cityMap[user.cityId]}</span>
           </div>
         )}
         <div className="flex items-center gap-2 text-xs text-white/40">
@@ -354,7 +360,7 @@ function AddMemberModal({
     password: "",
     role: "promoter" as "creator" | "promoter",
     gender: "male" as "male" | "female",
-    city: "",
+    cityId: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -368,7 +374,7 @@ function AddMemberModal({
         password: "",
         role: "promoter",
         gender: "male",
-        city: "",
+        cityId: "",
       });
       setError(null);
     }
@@ -400,7 +406,7 @@ function AddMemberModal({
         password: form.password,
         role: form.role,
         gender: form.gender,
-        city: form.city.trim() || "تهران",
+        cityId: form.cityId || undefined,
       });
       pushToast({
         type: "success",
@@ -493,18 +499,13 @@ function AddMemberModal({
                 placeholder="حداقل ۴ کاراکتر"
               />
             </label>
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-white/50">شهر</span>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 focus-within:border-orange-400/50 transition">
-                <FiMapPin className="text-white/30 shrink-0" />
-                <input
-                  value={form.city}
-                  onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                  className="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-white/20"
-                  placeholder="تهران"
-                />
-              </div>
-            </label>
+            <div className="block space-y-1.5">
+              <CitySelect
+                label="شهر"
+                value={form.cityId}
+                onChange={(id) => setForm(p => ({ ...p, cityId: id }))}
+              />
+            </div>
           </div>
 
           {/* Role + Gender */}
@@ -586,7 +587,7 @@ function EditMemberModal({
     phone: "",
     password: "",
     role: "promoter" as "creator" | "promoter",
-    city: "",
+    cityId: "",
     job: "",
     address: "",
   });
@@ -601,7 +602,7 @@ function EditMemberModal({
         phone: user.phone ?? "",
         password: "",
         role: user.role as "creator" | "promoter",
-        city: user.city ?? "",
+        cityId: user.cityId ?? "",
         job: user.job ?? "",
         address: user.address ?? "",
       });
@@ -626,7 +627,7 @@ function EditMemberModal({
       if (form.email.trim()) patch.email = form.email.trim();
       if (form.phone.trim()) patch.phone = form.phone.trim();
       if (form.password.trim()) patch.password = form.password.trim();
-      if (form.city.trim()) patch.city = form.city.trim();
+      if (form.cityId) patch.cityId = form.cityId;
       if (form.job.trim()) patch.job = form.job.trim();
       if (form.address.trim()) patch.address = form.address.trim();
 
@@ -731,17 +732,13 @@ function EditMemberModal({
 
           {/* City + Job */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-white/50">شهر</span>
-              <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 focus-within:border-orange-400/50 transition">
-                <FiMapPin className="text-white/30 shrink-0" />
-                <input
-                  value={form.city}
-                  onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                  className="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-white/20"
-                />
-              </div>
-            </label>
+            <div className="block space-y-1.5">
+              <CitySelect
+                label="شهر"
+                value={form.cityId}
+                onChange={(id) => setForm(p => ({ ...p, cityId: id }))}
+              />
+            </div>
             <label className="block space-y-1.5">
               <span className="text-xs font-medium text-white/50">شغل</span>
               <input
@@ -857,11 +854,20 @@ function DeleteConfirmModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MembersPage() {
   const router = useRouter();
+  const pushToast = useToastStore((state) => state.push);
   const me = useQuery(api.users.auth.me);
+  const cities = useQuery(api.cities.listActive) as City[] | undefined;
   const staffList = useQuery(api.users.users.listStaff);
   const updateUser = useMutation(api.users.users.update);
   const removeUser = useMutation(api.users.users.remove);
-  const pushToast = useToastStore((state) => state.push);
+
+  const cityMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    cities?.forEach((c: City) => {
+      map[c._id] = c.name;
+    });
+    return map;
+  }, [cities]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<StaffUser | null>(null);
@@ -1092,6 +1098,7 @@ export default function MembersPage() {
               onDelete={setPendingDelete}
               actionLoading={actionLoading}
               deletingId={deletingId}
+              cityMap={cityMap}
             />
           ))}
         </div>

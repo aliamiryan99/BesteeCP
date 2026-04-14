@@ -27,6 +27,7 @@ import {
 import { sanitizeError } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import LevelCircle from "@/components/profile/LevelCircle";
+import CitySelect from "@/components/common/CitySelect";
 
 // Dynamically import the map component (Leaflet requires window)
 const LocationPicker = dynamic(() => import("@/components/profile/LocationPicker"), {
@@ -53,7 +54,7 @@ export default function ProfilePage() {
   const [nationalCode, setNationalCode] = useState("");
   const [job, setJob] = useState("");
   const [gender, setGender] = useState<"male" | "female">("male");
-  const [city, setCity] = useState("");
+  const [cityId, setCityId] = useState("");
   const [homePhone, setHomePhone] = useState("");
   const [address, setAddress] = useState("");
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -80,7 +81,7 @@ export default function ProfilePage() {
       setNationalCode(user.nationalCode || "");
       setJob(user.job || "");
       setGender(user.gender || "male");
-      setCity(user.city || "");
+      setCityId(user.cityId || "");
       setHomePhone(user.homePhone || "");
       setAddress(user.address || "");
       setLocation(user.homeLocation || null);
@@ -156,7 +157,7 @@ export default function ProfilePage() {
         nationalCode: nationalCode || undefined,
         job: job || undefined,
         gender: gender || undefined,
-        city: city || undefined,
+        cityId: cityId || undefined,
         homePhone: homePhone || undefined,
         address: address || undefined,
       };
@@ -395,12 +396,10 @@ export default function ProfilePage() {
                   <option value="female" className="bg-slate-900">خانم</option>
                 </select>
               </div>
-              <InputField
+              <CitySelect
                 label="شهر"
-                icon={<FiMapPin />}
-                value={city}
-                onChange={setCity}
-                placeholder="نام شهر"
+                value={cityId}
+                onChange={setCityId}
               />
             </div>
           </div>

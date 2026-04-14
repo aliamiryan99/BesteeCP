@@ -8,6 +8,7 @@ import { useToastStore } from "@/store/toastStore";
 import { sanitizeError } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import CitySelect from "@/components/common/CitySelect";
 import {
   FiScissors,
   FiLink,
@@ -61,7 +62,7 @@ interface MemberState {
     phone: string;
     email: string;
     gender: "male" | "female";
-    city: string;
+    cityId: string;
   };
 }
 
@@ -70,7 +71,7 @@ const EMPTY_NEW_USER = {
   phone: "",
   email: "",
   gender: "male" as const,
-  city: "تهران",
+  cityId: "",
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -87,6 +88,7 @@ export default function NewTenantPage() {
   const [name, setName] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [title, setTitle] = useState("");
+  const [cityId, setCityId] = useState("");
   const [type, setType] = useState<"barbers" | "barbies">("barbers");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -134,6 +136,7 @@ export default function NewTenantPage() {
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(subdomain.trim()))
         errs.subdomain = "فقط حروف کوچک انگلیسی، اعداد و خط تیره";
       if (!title.trim()) errs.title = "عنوان سایت الزامی است";
+      if (!cityId) errs.cityId = "انتخاب شهر الزامی است";
     }
     if (step === 2) {
       if (!location) errs.location = "تعیین موقعیت مکانی اجباری است";
@@ -164,7 +167,7 @@ export default function NewTenantPage() {
   const canProceed = useMemo(() => {
     return Object.keys(validateStep(currentStep)).length === 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentStep, name, subdomain, title, location, certificateFile, certificatePreview, owners, staff]);
+  }, [currentStep, name, subdomain, title, cityId, location, certificateFile, certificatePreview, owners, staff]);
 
   const handleNext = () => {
     const errs = validateStep(currentStep);
@@ -241,6 +244,7 @@ export default function NewTenantPage() {
         type,
         subdomain: subdomain.trim(),
         mainDomain: defaultMain,
+        cityId: cityId || undefined,
         title: title.trim(),
         phone: phone.trim() || undefined,
         address: address.trim() || undefined,
@@ -489,6 +493,16 @@ export default function NewTenantPage() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                <div className="col-span-1 lg:col-span-2">
+                  <CitySelect
+                    label="شهر شعبه"
+                    value={cityId}
+                    onChange={setCityId}
+                    error={errors.cityId}
+                    required
+                  />
                 </div>
 
                 <InputField
@@ -1131,12 +1145,10 @@ function MemberCard({
               </button>
             </div>
           </div>
-          <InputField
+          <CitySelect
             label="شهر"
-            icon={<FiMapPin />}
-            value={member.newUser.city}
-            onChange={(v: string) => onChange({ ...member, newUser: { ...member.newUser, city: v } })}
-            placeholder="مثلاً: تهران"
+            value={member.newUser.cityId}
+            onChange={(v: string) => onChange({ ...member, newUser: { ...member.newUser, cityId: v } })}
           />
         </div>
       )}

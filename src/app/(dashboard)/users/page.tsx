@@ -29,7 +29,10 @@ import {
 import LevelCircle from "@/components/profile/LevelCircle";
 import { useQuery } from "convex/react";
 import { api } from "@backend/api";
+import { Doc } from "@backend/dataModel";
 import { translateRole } from "@/lib/translations";
+
+type City = Doc<"cities">;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type UserRole = "creator" | "promoter" | "owner" | "staff" | "customer";
@@ -49,7 +52,7 @@ type EnrichedUser = {
   level?: number;
   xp?: number;
   score?: number;
-  city: string;
+  cityId?: string;
   gender: Gender;
   job?: string;
   address?: string;
@@ -154,7 +157,7 @@ function UserAvatar({ user, size = "md" }: { user: EnrichedUser; size?: "sm" | "
 }
 
 // ─── User Row ─────────────────────────────────────────────────────────────────
-function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: boolean; onClick: () => void }) {
+function UserRow({ user, selected, onClick, cityName }: { user: EnrichedUser; selected: boolean; onClick: () => void; cityName?: string }) {
   const role = ROLE_CONFIG[user.role];
 
   return (
@@ -194,11 +197,10 @@ function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: bo
         <FiPhone className="text-white/20 shrink-0" />
         <span dir="ltr">{user.phone}</span>
       </div>
-
       {/* City */}
       <div className="hidden lg:flex items-center gap-1 text-xs text-white/40 min-w-[80px]">
         <FiMapPin className="text-white/20 shrink-0 text-xs" />
-        {user.city}
+        {cityName || "نامشخص"}
       </div>
 
       {/* Credit */}
@@ -235,13 +237,13 @@ function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: bo
 }
 
 // ─── User Detail Panel ────────────────────────────────────────────────────────
-function UserDetailPanel({ user, onClose }: { user: EnrichedUser; onClose: () => void }) {
+function UserDetailPanel({ user, onClose, cityName }: { user: EnrichedUser; onClose: () => void; cityName?: string }) {
   const role = ROLE_CONFIG[user.role];
 
   const infoRows: { icon: React.ReactNode; label: string; value: string }[] = [
     { icon: <FiPhone />, label: "موبایل", value: user.phone },
     ...(user.email ? [{ icon: <FiMail />, label: "ایمیل", value: user.email }] : []),
-    { icon: <FiMapPin />, label: "شهر", value: user.city },
+    { icon: <FiMapPin />, label: "شهر", value: cityName || "نامشخص" },
     { icon: <FiClock />, label: "عضویت", value: new Date(user._creationTime).toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" }) },
     ...(user.tenantName ? [{ icon: <FiHome />, label: "شعبه", value: user.tenantName }] : []),
     ...(user.job ? [{ icon: <FiActivity />, label: "شغل", value: user.job }] : []),
@@ -362,7 +364,16 @@ function RowSkeleton() {
 export default function UsersPage() {
   const router = useRouter();
   const me = useQuery(api.users.auth.me);
+  const cities = useQuery(api.cities.listActive) as City[] | undefined;
   const rawUsers = useQuery(api.users.users.listAllUsers);
+
+  const cityMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    cities?.forEach((c: City) => {
+      map[c._id] = c.name;
+    });
+    return map;
+  }, [cities]);
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
@@ -384,7 +395,7 @@ export default function UsersPage() {
         u.name.toLowerCase().includes(q) ||
         u.phone.includes(q) ||
         (u.email?.toLowerCase().includes(q)) ||
-        (u.city?.toLowerCase().includes(q)) ||
+        (u.cityId && cityMap[u.cityId]?.toLowerCase().includes(q)) ||
         (u.tenantName?.toLowerCase().includes(q))
       );
     }
@@ -395,7 +406,7 @@ export default function UsersPage() {
     if (genderFilter !== "all") list = list.filter(u => u.gender === genderFilter);
 
     return list;
-  }, [users, search, roleFilter, statusFilter, genderFilter]);
+  }, [users, search, roleFilter, statusFilter, genderFilter, cityMap]);
 
   // ── Summary Stats ─────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -583,6 +594,7 @@ export default function UsersPage() {
                   key={user._id}
                   user={user}
                   selected={selectedUser?._id === user._id}
+                  cityName={user.cityId ? cityMap[user.cityId] : undefined}
                   onClick={() => setSelectedUser(prev => prev?._id === user._id ? null : user)}
                 />
               ))}
@@ -593,7 +605,11 @@ export default function UsersPage() {
         {/* Detail panel */}
         {selectedUser && (
           <div className="lg:block">
-            <UserDetailPanel user={selectedUser} onClose={() => setSelectedUser(null)} />
+            <UserDetailPanel
+              user={selectedUser}
+              onClose={() => setSelectedUser(null)}
+              cityName={selectedUser.cityId ? cityMap[selectedUser.cityId] : undefined}
+            />
           </div>
         )}
       </div>
