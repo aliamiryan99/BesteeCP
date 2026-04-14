@@ -30,6 +30,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
 import { useToastStore } from "@/store/toastStore";
 import { translateRole } from "@/lib/translations";
+import LevelCircle from "@/components/profile/LevelCircle";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type StaffUser = {
@@ -45,6 +46,8 @@ type StaffUser = {
   reputation: number;
   credit: number;
   score?: number;
+  xp?: number;
+  level?: number;
   city: string;
   gender: "male" | "female";
   profilePictureUrl?: string;
@@ -64,7 +67,7 @@ const ROLE_CONFIG = {
     glow: "shadow-amber-500/20",
   },
   promoter: {
-    label: "پروموتر",
+    label: "پیامبر",
     gradient: "from-indigo-400 to-violet-500",
     bg: "bg-indigo-500/10",
     border: "border-indigo-500/20",
@@ -129,7 +132,6 @@ function MemberCard({
   user,
   isCurrentUser,
   onEdit,
-  onToggleActive,
   onToggleBan,
   onDelete,
   actionLoading,
@@ -138,7 +140,6 @@ function MemberCard({
   user: StaffUser;
   isCurrentUser: boolean;
   onEdit: (user: StaffUser) => void;
-  onToggleActive: (user: StaffUser) => void;
   onToggleBan: (user: StaffUser) => void;
   onDelete: (user: StaffUser) => void;
   actionLoading: string | null;
@@ -195,13 +196,18 @@ function MemberCard({
           </div>
         </div>
 
-        {/* Role Badge */}
-        <span
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${role.bg} ${role.text} border ${role.border}`}
-        >
-          {role.icon}
-          {role.label}
-        </span>
+        {/* Role Badge and Level */}
+        <div className="flex items-center gap-2">
+          {user.role === "promoter" && (
+            <LevelCircle xp={user.xp} size={28} strokeWidth={2.5} />
+          )}
+          <span
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${role.bg} ${role.text} border ${role.border}`}
+          >
+            {role.icon}
+            {role.label}
+          </span>
+        </div>
       </div>
 
       {/* Contact Info */}
@@ -252,8 +258,8 @@ function MemberCard({
         )}
         <StatBadge
           icon={<FiZap />}
-          label="اعتبار"
-          value={`${user.reputation ?? 0} ★`}
+          label="شهرت"
+          value={`${user.reputation ?? 0}`}
           color="text-amber-400"
         />
       </div>
@@ -262,8 +268,8 @@ function MemberCard({
       <div className="flex items-center gap-2 flex-wrap">
         <span
           className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${user.active
-              ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-              : "bg-rose-500/10 text-rose-300 border border-rose-500/20"
+            ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+            : "bg-rose-500/10 text-rose-300 border border-rose-500/20"
             }`}
         >
           {user.active ? (
@@ -303,29 +309,11 @@ function MemberCard({
         </button>
 
         <button
-          onClick={() => onToggleActive(user)}
-          disabled={isActing}
-          className={`cursor-pointer flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition disabled:opacity-50 ${user.active
-              ? "border-rose-500/30 text-rose-300 hover:bg-rose-500/10"
-              : "border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
-            }`}
-        >
-          {isActing ? (
-            <FiLoader className="animate-spin" />
-          ) : user.active ? (
-            <FiToggleLeft />
-          ) : (
-            <FiToggleRight />
-          )}
-          {user.active ? "غیرفعال کن" : "فعال کن"}
-        </button>
-
-        <button
           onClick={() => onToggleBan(user)}
           disabled={isActing}
           className={`cursor-pointer flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition disabled:opacity-50 ${user.ban
-              ? "border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
-              : "border-red-500/30 text-red-300 hover:bg-red-500/10"
+            ? "border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+            : "border-red-500/30 text-red-300 hover:bg-red-500/10"
             }`}
         >
           {user.ban ? <FiUnlock /> : <FiLock />}
@@ -355,6 +343,7 @@ function AddMemberModal({
   open: boolean;
   onClose: () => void;
 }) {
+  const me = useQuery(api.users.auth.me);
   const createUser = useMutation(api.users.users.create);
   const pushToast = useToastStore((state) => state.push);
 
@@ -527,7 +516,7 @@ function AddMemberModal({
                 onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as "creator" | "promoter" }))}
                 className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white outline-none focus:border-orange-400/50 transition"
               >
-                <option value="promoter">پروموتر</option>
+                <option value="promoter">پیامبر</option>
                 <option value="creator">خالق</option>
               </select>
             </label>
@@ -587,6 +576,7 @@ function EditMemberModal({
   user: StaffUser | null;
   onClose: () => void;
 }) {
+  const me = useQuery(api.users.auth.me);
   const updateUser = useMutation(api.users.users.update);
   const pushToast = useToastStore((state) => state.push);
 
@@ -770,9 +760,10 @@ function EditMemberModal({
               value={form.role}
               onChange={(e) => setForm((p) => ({ ...p, role: e.target.value as "creator" | "promoter" }))}
               className="w-full rounded-2xl border border-white/10 bg-slate-800 px-4 py-3 text-sm text-white outline-none focus:border-orange-400/50 transition"
+              disabled={me?.role !== "creator"}
             >
-              <option value="promoter">پروموتر</option>
-              <option value="creator">خالق</option>
+              <option value="promoter">پیامبر</option>
+              {me?.role === "creator" && <option value="creator">خالق</option>}
             </select>
           </label>
 
@@ -880,35 +871,19 @@ export default function MembersPage() {
   const [filter, setFilter] = useState<"all" | "creator" | "promoter">("all");
 
   const initialized = me !== undefined;
-  const isCreator = me?.role === "creator";
+  const hasAccess = me?.role === "creator" || me?.role === "promoter";
   const users = (staffList ?? []) as StaffUser[];
 
   // Role guard
   useEffect(() => {
-    if (initialized && !isCreator) {
+    if (initialized && !hasAccess) {
       pushToast({
         type: "error",
         title: "دسترسی محدود",
-        message: "این بخش فقط برای خالق سیستم مجاز است",
+        message: "این بخش فقط برای خالق و پیامبر مجاز است",
       });
     }
-  }, [initialized, isCreator, pushToast]);
-
-  const handleToggleActive = async (user: StaffUser) => {
-    setActionLoading(user._id);
-    try {
-      await updateUser({ userId: user._id as any, active: !user.active });
-      pushToast({
-        type: "success",
-        title: "وضعیت به‌روز شد",
-        message: `${user.name} ${!user.active ? "فعال شد" : "غیرفعال شد"}`,
-      });
-    } catch (e: any) {
-      pushToast({ type: "error", title: "خطا", message: e.message });
-    } finally {
-      setActionLoading(null);
-    }
-  };
+  }, [initialized, hasAccess, pushToast]);
 
   const handleToggleBan = async (user: StaffUser) => {
     setActionLoading(user._id);
@@ -957,7 +932,7 @@ export default function MembersPage() {
   }
 
   // Access denied
-  if (!isCreator) {
+  if (!hasAccess) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
@@ -966,7 +941,7 @@ export default function MembersPage() {
           </div>
           <p className="text-lg font-bold text-white mb-2">دسترسی محدود</p>
           <p className="text-sm text-white/50">
-            این بخش فقط برای خالق سیستم قابل دسترس است.
+            این بخش فقط برای خالق و پیامبران سیستم قابل دسترس است.
           </p>
           <button
             onClick={() => router.push("/")}
@@ -1001,7 +976,7 @@ export default function MembersPage() {
               تیم بستی
             </h1>
             <p className="mt-1 text-sm text-white/40">
-              مدیریت خالقان و پروموترهای پلتفرم
+              مدیریت خالقان و پیامبرانی پلتفرم
             </p>
           </div>
           <button
@@ -1032,7 +1007,7 @@ export default function MembersPage() {
             },
             {
               icon: <FiStar />,
-              label: "پروموترها",
+              label: "پیامبران",
               value: totalPromoters,
               color: "text-indigo-400",
               bg: "bg-indigo-500/10",
@@ -1062,7 +1037,7 @@ export default function MembersPage() {
       {/* ── Filter Tabs ── */}
       <div className="flex items-center gap-2 flex-wrap">
         {(["all", "creator", "promoter"] as const).map((f) => {
-          const labels = { all: "همه", creator: "خالقان", promoter: "پروموترها" };
+          const labels = { all: "همه", creator: "خالقان", promoter: "پیامبران" };
           const counts = {
             all: users.length,
             creator: totalCreators,
@@ -1074,8 +1049,8 @@ export default function MembersPage() {
               key={f}
               onClick={() => setFilter(f)}
               className={`flex items-center gap-1.5 rounded-2xl border px-4 py-2 text-sm font-semibold transition ${active
-                  ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                  : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80"
+                ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                : "border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80"
                 }`}
             >
               {labels[f]}
@@ -1113,7 +1088,6 @@ export default function MembersPage() {
               user={user}
               isCurrentUser={user._id === me?._id}
               onEdit={setEditingUser}
-              onToggleActive={handleToggleActive}
               onToggleBan={handleToggleBan}
               onDelete={setPendingDelete}
               actionLoading={actionLoading}

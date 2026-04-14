@@ -25,6 +25,9 @@ import {
   FiImage,
   FiExternalLink,
   FiLoader,
+  FiCalendar,
+  FiCheckCircle,
+  FiXCircle,
 } from "react-icons/fi";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
@@ -41,7 +44,7 @@ type EnrichedTenant = {
   type: TenantType;
   subdomain: string;
   mainDomain: string;
-  status: string;
+  active: boolean;
   planId: string;
   createdBy: string;
   domains: { hostname: string }[];
@@ -56,6 +59,8 @@ type EnrichedTenant = {
   ownerCount: number;
   staffCount: number;
   customerCount: number;
+  hasBoughtPaidPlan?: boolean;
+  subscriptionEndDate?: number;
 };
 
 // ─── Config ──────────────────────────────────────────────────────────────────
@@ -154,18 +159,32 @@ function TenantCard({ tenant, onDelete }: { tenant: EnrichedTenant; onDelete: (t
 
       {/* Status + creator */}
       <div className="flex items-center gap-2 flex-wrap text-[11px]">
-        <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 font-bold border ${
-          tenant.status === "active"
-            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-            : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-        }`}>
-          <FiActivity className="text-[9px]" />
-          {tenant.status === "active" ? "فعال" : "غیرفعال"}
-        </span>
-        {tenant.certificateImageUrl && (
-          <span className="flex items-center gap-1 rounded-full bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 font-bold text-violet-300">
-            <FiImage className="text-[9px]" />
-            مجوز
+        {tenant.active ? (
+          <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 font-bold text-emerald-400">
+            <FiActivity className="text-[9px]" />
+            فعال (در حال کار)
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 font-bold text-rose-400">
+            <FiSlash className="text-[9px]" />
+            راکد
+          </span>
+        )}
+        {tenant.hasBoughtPaidPlan ? (
+          <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 font-bold text-emerald-400">
+            <FiCheckCircle className="text-[9px]" />
+            خرید کرده
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 rounded-full bg-slate-500/10 border border-slate-500/20 px-2 py-0.5 font-bold text-slate-400">
+            <FiXCircle className="text-[9px]" />
+            بدون خرید
+          </span>
+        )}
+        {tenant.subscriptionEndDate && (
+          <span className="flex items-center gap-1 rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 font-bold text-blue-300">
+            <FiCalendar className="text-[9px]" />
+            انقضا: {new Date(tenant.subscriptionEndDate).toLocaleDateString("fa-IR")}
           </span>
         )}
         <span className="text-white/25">·</span>
@@ -218,6 +237,13 @@ function TenantCard({ tenant, onDelete }: { tenant: EnrichedTenant; onDelete: (t
         </span>
         <div className="mr-auto flex items-center gap-2">
           <button
+            onClick={() => router.push(`/tenants/${tenant._id}/edit`)}
+            className="cursor-pointer flex items-center gap-1 rounded-xl border border-indigo-800/40 bg-indigo-900/10 px-2.5 py-1 text-[11px] text-indigo-300 transition hover:bg-indigo-900/30"
+          >
+            <FiEdit2 className="text-[10px]" />
+            ویرایش
+          </button>
+          <button
             onClick={() => onDelete(tenant)}
             className="cursor-pointer flex items-center gap-1 rounded-xl border border-rose-800/40 px-2.5 py-1 text-[11px] text-rose-400 transition hover:bg-rose-900/20"
           >
@@ -235,11 +261,10 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
-      className={`cursor-pointer rounded-2xl border px-4 py-1.5 text-xs font-bold transition-all duration-200 ${
-        active
-          ? "border-orange-500/40 bg-orange-500/15 text-orange-300 shadow shadow-orange-500/10"
-          : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
-      }`}
+      className={`cursor-pointer rounded-2xl border px-4 py-1.5 text-xs font-bold transition-all duration-200 ${active
+        ? "border-orange-500/40 bg-orange-500/15 text-orange-300 shadow shadow-orange-500/10"
+        : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+        }`}
     >
       {label}
     </button>
@@ -304,8 +329,8 @@ export default function TenantsPage() {
       );
     }
     if (typeFilter !== "all") list = list.filter(t => t.type === typeFilter);
-    if (statusFilter === "active") list = list.filter(t => t.status === "active");
-    if (statusFilter === "inactive") list = list.filter(t => t.status !== "active");
+    if (statusFilter === "active") list = list.filter(t => t.active);
+    if (statusFilter === "inactive") list = list.filter(t => !t.active);
     if (planFilter !== "all") list = list.filter(t => t.planKey === planFilter);
 
     return list;
@@ -316,7 +341,7 @@ export default function TenantsPage() {
     if (!tenants) return null;
     return {
       total: tenants.length,
-      active: tenants.filter(t => t.status === "active").length,
+      active: tenants.filter(t => t.active).length,
       barbers: tenants.filter(t => t.type === "barbers").length,
       barbies: tenants.filter(t => t.type === "barbies").length,
       free: tenants.filter(t => t.planKey === "free").length,
@@ -347,7 +372,7 @@ export default function TenantsPage() {
           <FiSlash className="text-2xl text-rose-400" />
         </div>
         <p className="text-lg font-bold text-white">دسترسی ندارید</p>
-        <p className="text-sm text-white/40">مدیریت شعب فقط برای نقش خالق یا پروموتر قابل دسترس است.</p>
+        <p className="text-sm text-white/40">مدیریت شعب فقط برای نقش خالق یا پیامبر قابل دسترس است.</p>
         <button onClick={() => router.push("/")} className="cursor-pointer mt-4 rounded-2xl border border-white/10 px-6 py-2.5 text-sm text-white/60 hover:bg-white/5 transition">
           بازگشت به داشبورد
         </button>

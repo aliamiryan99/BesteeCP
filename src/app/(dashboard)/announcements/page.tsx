@@ -11,9 +11,9 @@ import { useToastStore } from "@/store/toastStore";
 
 export default function AnnouncementsPage() {
   const me = useQuery(api.users.auth.me);
-  const announcements = useQuery(api.announcements.list);
-  const createAnnouncement = useMutation(api.announcements.create);
-  const removeAnnouncement = useMutation(api.announcements.remove);
+  const announcements = useQuery(api.announcements.announcements.list);
+  const createAnnouncement = useMutation(api.announcements.announcements.create);
+  const removeAnnouncement = useMutation(api.announcements.announcements.remove);
   const pushToast = useToastStore((state) => state.push);
 
   const [isAdding, setIsAdding] = useState(false);

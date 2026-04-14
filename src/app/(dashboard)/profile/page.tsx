@@ -26,6 +26,7 @@ import {
 } from "react-icons/fi";
 import { sanitizeError } from "@/lib/utils";
 import dynamic from "next/dynamic";
+import LevelCircle from "@/components/profile/LevelCircle";
 
 // Dynamically import the map component (Leaflet requires window)
 const LocationPicker = dynamic(() => import("@/components/profile/LocationPicker"), {
@@ -302,11 +303,8 @@ export default function ProfilePage() {
                   فعال
                 </span>
               )}
-              {user.privilege && (
-                <span className="inline-flex items-center gap-1 rounded-xl bg-violet-500/15 border border-violet-500/25 px-3 py-1 text-xs font-bold text-violet-400">
-                  <FiStar className="text-xs" />
-                  ویژه
-                </span>
+              {user.role === "promoter" && (
+                <LevelCircle xp={user.xp} size={32} strokeWidth={3} />
               )}
             </div>
             <p className="text-sm text-white/40 mt-1">
@@ -495,11 +493,10 @@ export default function ProfilePage() {
           <h2 className="text-lg font-bold text-white">وضعیت حساب</h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <StatusBadge label="نقش" value={translateRole(user.role)} color="orange" />
           <StatusBadge label="وضعیت" value={user.active ? "فعال" : "غیرفعال"} color={user.active ? "emerald" : "red"} />
           <StatusBadge label="مسدود" value={user.ban ? "بله" : "خیر"} color={user.ban ? "red" : "emerald"} />
-          <StatusBadge label="ویژه" value={user.privilege ? "بله" : "خیر"} color={user.privilege ? "violet" : "slate"} />
         </div>
       </motion.section>
 

@@ -26,6 +26,7 @@ import {
   FiSlash,
   FiHome,
 } from "react-icons/fi";
+import LevelCircle from "@/components/profile/LevelCircle";
 import { useQuery } from "convex/react";
 import { api } from "@backend/api";
 import { translateRole } from "@/lib/translations";
@@ -43,9 +44,10 @@ type EnrichedUser = {
   role: UserRole;
   active: boolean;
   ban: boolean;
-  privilege: boolean;
   reputation: number;
   credit: number;
+  level?: number;
+  xp?: number;
   score?: number;
   city: string;
   gender: Gender;
@@ -74,7 +76,7 @@ const ROLE_CONFIG: Record<UserRole, {
     icon: <FiShield />,
   },
   promoter: {
-    label: "پروموتر",
+    label: "پیامبر",
     gradient: "from-indigo-400 to-violet-500",
     bg: "bg-indigo-500/10",
     border: "border-indigo-500/20",
@@ -158,11 +160,10 @@ function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: bo
   return (
     <div
       onClick={onClick}
-      className={`cursor-pointer group flex items-center gap-4 rounded-2xl border px-4 py-3 transition-all duration-200 ${
-        selected
+      className={`cursor-pointer group flex items-center gap-4 rounded-2xl border px-4 py-3 transition-all duration-200 ${selected
           ? "border-orange-500/30 bg-orange-500/8 shadow-lg shadow-orange-500/5"
           : "border-white/5 bg-white/3 hover:bg-white/6 hover:border-white/10"
-      }`}
+        }`}
     >
       {/* Avatar */}
       <UserAvatar user={user} size="md" />
@@ -172,9 +173,9 @@ function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: bo
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-semibold text-white text-sm truncate">{user.name}</p>
           {user.ban && <FiSlash className="text-rose-400 text-xs shrink-0" title="مسدود" />}
-          {user.privilege && <FiShield className="text-violet-400 text-xs shrink-0" title="امتیازی" />}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
+          {user.role === "promoter" && <LevelCircle xp={user.xp} size={20} strokeWidth={2} />}
           <span className={`flex items-center gap-1 text-[10px] font-bold ${role.text}`}>
             {role.icon}
             {role.label}
@@ -195,9 +196,21 @@ function UserRow({ user, selected, onClick }: { user: EnrichedUser; selected: bo
       </div>
 
       {/* City */}
-      <div className="hidden lg:flex items-center gap-1 text-xs text-white/40">
+      <div className="hidden lg:flex items-center gap-1 text-xs text-white/40 min-w-[80px]">
         <FiMapPin className="text-white/20 shrink-0 text-xs" />
         {user.city}
+      </div>
+
+      {/* Credit */}
+      <div className="hidden min-[1100px]:flex flex-col items-center gap-0.5 min-w-[70px]">
+        <span className="text-xs font-bold text-emerald-400 leading-none">{user.credit.toLocaleString()}</span>
+        <span className="text-[9px] text-white/20 uppercase tracking-tighter">اعتبار</span>
+      </div>
+
+      {/* Reputation */}
+      <div className="hidden min-[1100px]:flex flex-col items-center gap-0.5 min-w-[60px]">
+        <span className="text-xs font-bold text-amber-400 leading-none">{user.reputation} ★</span>
+        <span className="text-[9px] text-white/20 uppercase tracking-tighter">شهرت</span>
       </div>
 
       {/* Status */}
@@ -255,10 +268,13 @@ function UserDetailPanel({ user, onClose }: { user: EnrichedUser; onClose: () =>
         </div>
         <div>
           <h3 className="text-lg font-black text-white">{user.name}</h3>
-          <span className={`inline-flex items-center gap-1.5 mt-1 rounded-full px-3 py-1 text-xs font-bold ${role.bg} ${role.text} border ${role.border}`}>
-            {role.icon}
-            {role.label}
-          </span>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            {user.role === "promoter" && <LevelCircle xp={user.xp} size={28} strokeWidth={2.5} />}
+            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${role.bg} ${role.text} border ${role.border}`}>
+              {role.icon}
+              {role.label}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -274,24 +290,15 @@ function UserDetailPanel({ user, onClose }: { user: EnrichedUser; onClose: () =>
             مسدود
           </span>
         )}
-        {user.privilege && (
-          <span className="flex items-center gap-1 rounded-full bg-violet-500/10 border border-violet-500/20 px-2.5 py-1 text-[11px] font-bold text-violet-300">
-            <FiShield className="text-xs" />
-            امتیازی
-          </span>
-        )}
         <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold border ${user.gender === "male" ? "bg-blue-500/10 border-blue-500/20 text-blue-300" : "bg-pink-500/10 border-pink-500/20 text-pink-300"}`}>
           {user.gender === "male" ? "آقا" : "خانم"}
         </span>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <StatPill label="اعتبار" value={user.credit.toLocaleString()} color="text-emerald-400" />
         <StatPill label="شهرت" value={`${user.reputation} ★`} color="text-amber-400" />
-        {user.role === "promoter" && (
-          <StatPill label="امتیاز" value={user.score ?? 0} color="text-indigo-400" />
-        )}
       </div>
 
       {/* Divider */}
@@ -324,11 +331,10 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
-      className={`cursor-pointer rounded-2xl border px-4 py-1.5 text-xs font-bold transition-all duration-200 ${
-        active
+      className={`cursor-pointer rounded-2xl border px-4 py-1.5 text-xs font-bold transition-all duration-200 ${active
           ? "border-orange-500/40 bg-orange-500/15 text-orange-300 shadow shadow-orange-500/10"
           : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
-      }`}
+        }`}
     >
       {label}
     </button>
@@ -345,6 +351,8 @@ function RowSkeleton() {
         <div className="h-2.5 w-20 rounded bg-white/10" />
       </div>
       <div className="h-3 w-24 rounded bg-white/10 hidden md:block" />
+      <div className="h-5 w-16 rounded bg-white/10 hidden min-[1100px]:block" />
+      <div className="h-5 w-12 rounded bg-white/10 hidden min-[1100px]:block" />
       <div className="h-5 w-14 rounded-full bg-white/10" />
     </div>
   );
@@ -406,14 +414,14 @@ export default function UsersPage() {
 
   const loading = me === undefined || rawUsers === undefined;
 
-  if (!loading && me?.role !== "creator") {
+  if (!loading && me?.role !== "creator" && me?.role !== "promoter") {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-rose-500/10 border border-rose-500/20">
           <FiSlash className="text-2xl text-rose-400" />
         </div>
         <p className="text-lg font-bold text-white">دسترسی ندارید</p>
-        <p className="text-sm text-white/40">مدیریت کاربران فقط برای نقش خالق قابل دسترس است.</p>
+        <p className="text-sm text-white/40">مدیریت کاربران فقط برای نقش خالق و پیامبر قابل دسترس است.</p>
         <button onClick={() => router.push("/")} className="cursor-pointer mt-4 rounded-2xl border border-white/10 px-6 py-2.5 text-sm text-white/60 hover:bg-white/5 transition">
           بازگشت به داشبورد
         </button>
@@ -448,7 +456,7 @@ export default function UsersPage() {
               { label: "مشتری", value: stats.customers, color: "text-rose-300" },
               { label: "مدیر شعبه", value: stats.owners, color: "text-emerald-300" },
               { label: "پرسنل", value: stats.tenantStaff, color: "text-cyan-300" },
-              { label: "خالق/پروموتر", value: stats.creators + stats.promoters, color: "text-amber-300" },
+              { label: "خالق/پیامبر", value: stats.creators + stats.promoters, color: "text-amber-300" },
             ].map((s) => (
               <div key={s.label} className="flex flex-col gap-1 rounded-2xl bg-white/5 border border-white/5 px-4 py-3">
                 <span className={`text-xl font-black ${s.color}`}>{s.value}</span>
@@ -494,7 +502,7 @@ export default function UsersPage() {
                 <FilterChip label="مشتری" active={roleFilter === "customer"} onClick={() => setRoleFilter("customer")} />
                 <FilterChip label="پرسنل" active={roleFilter === "staff"} onClick={() => setRoleFilter("staff")} />
                 <FilterChip label="مدیر شعبه" active={roleFilter === "owner"} onClick={() => setRoleFilter("owner")} />
-                <FilterChip label="پروموتر" active={roleFilter === "promoter"} onClick={() => setRoleFilter("promoter")} />
+                <FilterChip label="پیامبر" active={roleFilter === "promoter"} onClick={() => setRoleFilter("promoter")} />
                 <FilterChip label="خالق" active={roleFilter === "creator"} onClick={() => setRoleFilter("creator")} />
               </div>
             </div>

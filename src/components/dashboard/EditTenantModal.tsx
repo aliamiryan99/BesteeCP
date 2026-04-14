@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { FiCheck, FiHash, FiX } from "react-icons/fi";
 import { api } from "@backend/api";
 import { useToastStore } from "@/store/toastStore";
@@ -16,11 +16,14 @@ type Props = {
 const formatDate = (value?: string) =>
   value ? new Date(value).toISOString().slice(0, 10) : "";
 export function EditTenantModal({ open, tenant, onClose }: Props) {
-  const setStatusMutation = useMutation(api.tenants.tenants.setStatus);
+  const setActiveMutation = useMutation(api.tenants.tenants.setActive);
+  const updateTenant = useMutation(api.tenants.tenants.update);
+  const activeCities = useQuery(api.cities.listActive);
   const pushToast = useToastStore((state) => state.push);
 
   const [name, setName] = useState("");
-  const [status, setStatus] = useState<TenantStatus>("alive");
+  const [cityId, setCityId] = useState<string>("");
+  const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -29,7 +32,8 @@ export function EditTenantModal({ open, tenant, onClose }: Props) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!tenant) return;
     setName(tenant.name ?? "");
-    setStatus((tenant.status as any) ?? "alive");
+    setIsActive(tenant.active ?? true);
+    setCityId(tenant.cityId ?? "");
   }, [tenant]);
 
   if (!open || !tenant) return null;
@@ -43,9 +47,14 @@ export function EditTenantModal({ open, tenant, onClose }: Props) {
     setFormError(null);
     setSaving(true);
     try {
-      await setStatusMutation({
+      await setActiveMutation({
         tenantId: tenant._id as any,
-        status,
+        active: isActive,
+      });
+      await updateTenant({
+        tenantId: tenant._id as any,
+        name: name.trim(),
+        cityId: cityId ? (cityId as any) : undefined,
       });
       setSaving(false);
       pushToast({
@@ -95,21 +104,40 @@ export function EditTenantModal({ open, tenant, onClose }: Props) {
             </div>
           </label>
 
+          <label className="block space-y-1 text-sm">
+            <span className="text-muted">شهر (اختیاری)</span>
+            <select
+              value={cityId}
+              onChange={(e) => setCityId(e.target.value)}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-orange-500/60 appearance-none"
+            >
+              <option value="" className="bg-slate-900">بدون شهر</option>
+              {activeCities?.map((city: any) => (
+                <option key={city._id} value={city._id} className="bg-slate-900">
+                  {city.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="grid grid-cols-1 gap-4">
             <label className="block space-y-1 text-sm">
               <span className="text-muted">وضعیت</span>
               <div className="flex items-center gap-2">
-                {(["alive", "dead"] as TenantStatus[]).map((option) => (
+                {[
+                  { label: "فعال", value: true },
+                  { label: "غیرفعال", value: false },
+                ].map((option) => (
                   <button
-                    key={option}
+                    key={String(option.value)}
                     type="button"
-                    onClick={() => setStatus(option)}
-                    className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${status === option
+                    onClick={() => setIsActive(option.value)}
+                    className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${isActive === option.value
                         ? "border-orange-400/60 bg-orange-500/10 text-white"
                         : "border-white/10 bg-white/5 text-muted"
                       }`}
                   >
-                    {option === "alive" ? "فعال" : "غیرفعال"}
+                    {option.label}
                   </button>
                 ))}
               </div>

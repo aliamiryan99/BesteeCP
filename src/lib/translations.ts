@@ -1,6 +1,6 @@
 export const ROLE_TRANSLATIONS: Record<string, string> = {
   creator: "خالق",
-  promoter: "پروموتر",
+  promoter: "پیامبر",
   owner: "مالک",
   staff: "کارمند",
   customer: "مشتری",

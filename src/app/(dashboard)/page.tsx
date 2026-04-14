@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Doc } from "@backend/dataModel";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
+import LevelCircle from "@/components/profile/LevelCircle";
 
 const DashboardCharts = dynamic(
   () => import("@/components/dashboard/DashboardCharts").then(m => m.DashboardCharts),
@@ -20,13 +21,13 @@ function AnnouncementModal({ announcement, onClose }: { announcement: Doc<"annou
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900 shadow-2xl p-8 flex flex-col gap-6"
       >
-        <button 
+        <button
           onClick={onClose}
           className="cursor-pointer absolute top-6 left-6 h-10 w-10 flex items-center justify-center rounded-2xl bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-all duration-300"
         >
@@ -34,7 +35,7 @@ function AnnouncementModal({ announcement, onClose }: { announcement: Doc<"annou
         </button>
 
         <div className="flex flex-col gap-2 pt-2">
-           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80">
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/80">
             اطلاعیه سیستم
           </span>
           <h2 className="text-2xl font-black text-white">{announcement.title}</h2>
@@ -52,12 +53,12 @@ function AnnouncementModal({ announcement, onClose }: { announcement: Doc<"annou
         </div>
 
         <div className="flex items-center justify-end pt-2">
-           <button 
+          <button
             onClick={onClose}
             className="cursor-pointer rounded-2xl bg-gradient-to-l from-orange-500/20 to-amber-500/20 border border-orange-500/30 px-8 py-3 text-sm font-bold text-orange-300 hover:from-orange-500/30 hover:to-amber-500/30 transition-all duration-300"
-           >
+          >
             متوجه شدم
-           </button>
+          </button>
         </div>
       </motion.div>
     </div>
@@ -65,13 +66,13 @@ function AnnouncementModal({ announcement, onClose }: { announcement: Doc<"annou
 }
 
 export default function Home() {
-  const data = useQuery(api.dashboard.getDashboardMetrics);
+  const data = useQuery(api.dashboard.dashboard.getDashboardMetrics);
   const loading = data === undefined;
-  
+
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Doc<"announcements"> | null>(null);
 
   // Announcements section remains at the top for all
-  const announcements = useQuery(api.announcements.list) ?? [];
+  const announcements = useQuery(api.announcements.announcements.list) ?? [];
   const topAnnouncements = announcements.slice(0, 3);
 
   const timeSince = (timestamp: number) => {
@@ -98,8 +99,8 @@ export default function Home() {
           <p className="text-sm text-muted-soft pt-2">هیچ اطلاعیه‌ای وجود ندارد.</p>
         ) : (
           topAnnouncements.map((announcement: Doc<"announcements">) => (
-            <div 
-              key={announcement._id} 
+            <div
+              key={announcement._id}
               onClick={() => setSelectedAnnouncement(announcement)}
               className="cursor-pointer group relative z-10 hover:z-50 flex flex-col gap-2 rounded-2xl border border-white/5 bg-white/5 p-4 hover:bg-white/10 transition-colors"
             >
@@ -161,12 +162,12 @@ export default function Home() {
             icon={<FiUsers />}
             gradient="from-indigo-500 to-purple-600"
             submetrics={[
-              { label: "توسعه‌دهندگان", value: metrics.staff.creators },
-              { label: "پروموترها", value: metrics.staff.promoters }
+              { label: "خالقین", value: metrics.staff.creators },
+              { label: "پیامبران", value: metrics.staff.promoters }
             ]}
           />
           <MainStatsCard
-            title="مجموع مشتریان شعبه‌ها"
+            title="مجموع مشتریان شعب"
             value={metrics.customers.total}
             icon={<FiActivity />}
             gradient="from-rose-500 to-pink-600"
@@ -176,7 +177,7 @@ export default function Home() {
             ]}
           />
           <MainStatsCard
-            title="کاربران شعب (مدیران و پرسنل)"
+            title="همکاران شعب (مدیران و پرسنل)"
             value={metrics.tenantStaff.total}
             icon={<FiUsers />}
             gradient="from-cyan-500 to-blue-600"
@@ -267,9 +268,9 @@ export default function Home() {
 
         <AnimatePresence>
           {selectedAnnouncement && (
-            <AnnouncementModal 
-              announcement={selectedAnnouncement} 
-              onClose={() => setSelectedAnnouncement(null)} 
+            <AnnouncementModal
+              announcement={selectedAnnouncement}
+              onClose={() => setSelectedAnnouncement(null)}
             />
           )}
         </AnimatePresence>
@@ -282,12 +283,63 @@ export default function Home() {
     <div className="flex flex-col gap-8 pb-12">
       {renderAnnouncements()}
 
-      <MetricGroup title="شاخص‌های عملکرد پروموتر" icon={<FiStar />}>
+      <MetricGroup title="شاخص‌های عملکرد پیامبر" icon={<FiStar />}>
+        <div className="glass-panel group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border border-white/5 bg-slate-900/60 p-6 shadow-2xl transition-all hover:border-white/10 hover:shadow-amber-500/10">
+          <div className="absolute top-0 right-0 h-1 w-full bg-gradient-to-l from-amber-400 to-orange-500 opacity-50" />
+
+          <div className="relative flex items-start justify-between z-10">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-bold text-white/50">ترازنامه پیامبری</p>
+              <div className="flex items-baseline gap-2">
+                <h4 className="text-4xl font-black text-white tracking-tighter tabular-nums">
+                  {metrics.score.toLocaleString()}
+                </h4>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">امتیاز</span>
+                  <div className="h-0.5 w-6 bg-amber-500/30 rounded-full" />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center p-1 rounded-2xl bg-white/5 border border-white/5">
+              <LevelCircle xp={metrics.xp} size={52} strokeWidth={4} />
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between bg-white/5 p-3 rounded-2xl border border-white/5 z-10 group/reward relative">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-white/40 font-bold uppercase tracking-widest leading-none mb-1">پاداش پلتفرم</span>
+              <span className="text-sm font-black text-amber-300 flex items-center gap-1.5 direction-ltr">
+                {Math.round((metrics.score + 0.1 * (metrics.level || 1) * metrics.score) * 1.5 * 1500000).toLocaleString()} تومان
+              </span>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-xl text-white shadow-lg shadow-amber-900/20">
+              <FiAward />
+            </div>
+
+            {/* Formula Tooltip */}
+            <div className="absolute bottom-full right-0 mb-4 scale-0 opacity-0 transition-all group-hover/reward:scale-100 group-hover/reward:opacity-100 z-50">
+              <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-4 shadow-2xl backdrop-blur-xl">
+                <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-2">فرمول محاسبه پاداش</p>
+                <code className="text-[9px] text-white/70 font-mono" dir="ltr">
+                  (Score + 0.1 * Lvl * Score) * 1.5 * Price($)
+                </code>
+                <div className="mt-2 pt-2 border-t border-white/5 text-[9px] text-white/40">
+                  قیمت لحظه‌ای دلار: 150,000 تومان
+                </div>
+              </div>
+              <div className="absolute -bottom-2 right-6 h-4 w-4 rotate-45 border-r border-b border-white/10 bg-slate-900/90" />
+            </div>
+          </div>
+        </div>
+
         <MainStatsCard
-          title="امتیاز پروموتر (Score)"
-          value={metrics.score}
-          icon={<FiTrendingUp />}
-          gradient="from-amber-400 to-orange-500"
+          title="پیامبران جذب شده"
+          value={metrics.childPromoters}
+          icon={<FiUsers />}
+          gradient="from-blue-500 to-indigo-600"
+          submetrics={[
+            { label: "میانگین سطح", value: metrics.avgChildLevel, color: "text-indigo-400" }
+          ]}
         />
 
         <MainStatsCard
@@ -355,9 +407,9 @@ export default function Home() {
 
       <AnimatePresence>
         {selectedAnnouncement && (
-          <AnnouncementModal 
-            announcement={selectedAnnouncement} 
-            onClose={() => setSelectedAnnouncement(null)} 
+          <AnnouncementModal
+            announcement={selectedAnnouncement}
+            onClose={() => setSelectedAnnouncement(null)}
           />
         )}
       </AnimatePresence>

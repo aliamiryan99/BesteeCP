@@ -18,6 +18,7 @@ import {
   FiUserCheck,
   FiGrid,
   FiGlobe,
+  FiDatabase,
 } from "react-icons/fi";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -26,12 +27,6 @@ import { api } from "@backend/api";
 import { translateRole } from "@/lib/translations";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-
-const navLinks = [
-  { href: "/", label: "داشبورد", icon: FiHome },
-  { href: "/tenants", label: "شعب", icon: FiScissors },
-  { href: "/members", label: "اعضا", icon: FiUsers },
-];
 
 export function TopNav() {
   const router = useRouter();
@@ -42,11 +37,12 @@ export function TopNav() {
   const drawerRef = useRef<HTMLDivElement>(null);
 
   const dynamicNavLinks = [
-    ...navLinks,
-    ...(user?.role === "creator" ? [{ href: "/users", label: "کاربران", icon: FiUserCheck }] : []),
+    { href: "/", label: "داشبورد", icon: FiHome },
+    { href: "/tenants", label: "شعب", icon: FiScissors },
+    ...(user?.role === "creator" || user?.role === "promoter" ? [{ href: "/members", label: "اعضا", icon: FiUsers }] : []),
+    ...(user?.role === "creator" || user?.role === "promoter" ? [{ href: "/users", label: "کاربران", icon: FiUserCheck }] : []),
     ...(user?.role === "creator" ? [{ href: "/plans", label: "پلان‌ها", icon: FiAward }] : []),
-    ...(user?.role === "creator" ? [{ href: "/services", label: "سرویس‌ها", icon: FiGrid }] : []),
-    ...(user?.role === "creator" ? [{ href: "/domains", label: "دامنه‌ها", icon: FiGlobe }] : []),
+    ...(user?.role === "creator" ? [{ href: "/constants", label: "ثابت‌ها", icon: FiDatabase }] : []),
   ];
 
   // Close drawer on route change

@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
+import { Id } from "@backend/dataModel";
 
 type Props = {
   open: boolean;
@@ -18,9 +19,11 @@ type Props = {
 
 export function AddTenantModal({ open, onClose }: Props) {
   const defaultMain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'nobiro.ir';
+  const activeCities = useQuery(api.cities.listActive);
   const createTenant = useMutation(api.tenants.tenants.create);
   const [name, setName] = useState('');
   const [title, setTitle] = useState('');
+  const [cityId, setCityId] = useState<Id<"cities"> | "">("");
   const [domainType, setDomainType] = useState<'subdomain' | 'custom'>(
     'subdomain',
   );
@@ -61,6 +64,7 @@ export function AddTenantModal({ open, onClose }: Props) {
       subdomain: domainType === 'subdomain' ? name.trim() : "",
       mainDomain: defaultMain,
       title: title.trim() || name.trim(),
+      cityId: cityId ? (cityId as Id<"cities">) : undefined,
     };
 
     try {
@@ -71,6 +75,7 @@ export function AddTenantModal({ open, onClose }: Props) {
       setTitle('');
       setDomainAddress('');
       setDomainType('subdomain');
+      setCityId('');
       setTimeout(() => {
         onClose();
       }, 700);
@@ -127,6 +132,22 @@ export function AddTenantModal({ open, onClose }: Props) {
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-orange-500/60"
               placeholder="عنوان روی سایت"
             />
+          </label>
+
+          <label className="block space-y-1 text-sm">
+            <span className="text-muted">شهر (اختیاری)</span>
+            <select
+              value={cityId}
+              onChange={(e) => setCityId(e.target.value as any)}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition focus:border-orange-500/60 appearance-none"
+            >
+              <option value="" className="bg-slate-900">انتخاب شهر</option>
+              {activeCities?.map((city: any) => (
+                <option key={city._id} value={city._id} className="bg-slate-900">
+                  {city.name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="grid grid-cols-2 gap-3">
