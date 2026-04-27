@@ -14,11 +14,7 @@ type FinancialSettings = {
   profitRatio?: number;
   dollarPriceToman?: number;
   creditPriceCents?: number;
-  nanoBananaCostsCredits?: {
-    res1K?: number;
-    res2K?: number;
-    res4K?: number;
-  };
+  gptImageCostCredits?: number;
 } | null;
 
 export default function FinancialTab({
@@ -29,11 +25,7 @@ export default function FinancialTab({
   const [profitRatio, setProfitRatio] = useState<number>(1);
   const [dollarPrice, setDollarPrice] = useState<number>(160000);
   const [creditPriceCents, setCreditPriceCents] = useState<number>(1);
-  const [nanoCosts, setNanoCosts] = useState({
-    res1K: 8, // credits
-    res2K: 12,
-    res4K: 18,
-  });
+  const [gptCost, setGptCost] = useState<number>(2);
   const [isSaving, setIsSaving] = useState(false);
   const pushToast = useToastStore((state) => state.push);
 
@@ -44,12 +36,10 @@ export default function FinancialTab({
       setProfitRatio(settings.profitRatio ?? 1);
       setDollarPrice(settings.dollarPriceToman ?? 160000);
       setCreditPriceCents(settings.creditPriceCents ?? 1);
-      if (settings.nanoBananaCostsCredits) {
-        setNanoCosts({
-          res1K: settings.nanoBananaCostsCredits.res1K ?? 8,
-          res2K: settings.nanoBananaCostsCredits.res2K ?? 12,
-          res4K: settings.nanoBananaCostsCredits.res4K ?? 18,
-        });
+      // Fallback or use gptImageCostCredits from settings
+      const s = settings as any;
+      if (s.gptImageCostCredits !== undefined) {
+        setGptCost(s.gptImageCostCredits);
       }
     }
   }, [settings]);
@@ -61,7 +51,7 @@ export default function FinancialTab({
         profitRatio,
         dollarPriceToman: dollarPrice,
         creditPriceCents,
-        nanoBananaCostsCredits: nanoCosts,
+        gptImageCostCredits: gptCost,
       });
       pushToast({
         type: "success",
@@ -83,9 +73,8 @@ export default function FinancialTab({
     }
   };
 
-  const exampleCostCredits = nanoCosts.res1K; // Example cost of 1K nano banana generation
   const baseCostToman =
-    ((exampleCostCredits * creditPriceCents) / 100) * dollarPrice;
+    ((gptCost * creditPriceCents) / 100) * dollarPrice;
   const userCostToman = baseCostToman * profitRatio;
 
   return (
@@ -98,27 +87,22 @@ export default function FinancialTab({
           <div>
             <h3 className="text-lg font-bold text-white">نرخ‌گذاری و سود</h3>
             <p className="text-sm text-white/40">
-              تنظیمات پایه قیمت‌گذاری برای سیستم هوش مصنوعی
+              تنظیمات پایه قیمت‌گذاری برای سیستم هوش مصنوعی (GPT-Image-2)
             </p>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-3">
               <label className="text-sm font-bold text-white/70 block">
-                هزینه مدل (اعتبار) - 1K
+                هزینه مدل GPT-Image-2 (اعتبار)
               </label>
               <div className="relative">
                 <input
                   type="number"
-                  value={nanoCosts.res1K}
-                  onChange={(e) =>
-                    setNanoCosts({
-                      ...nanoCosts,
-                      res1K: Number(e.target.value),
-                    })
-                  }
+                  value={gptCost}
+                  onChange={(e) => setGptCost(Number(e.target.value))}
                   className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
                   dir="ltr"
                 />
@@ -126,52 +110,9 @@ export default function FinancialTab({
                   credits
                 </span>
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-white/70 block">
-                هزینه مدل (اعتبار) - 2K
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={nanoCosts.res2K}
-                  onChange={(e) =>
-                    setNanoCosts({
-                      ...nanoCosts,
-                      res2K: Number(e.target.value),
-                    })
-                  }
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
-                  dir="ltr"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 text-sm font-bold">
-                  credits
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-sm font-bold text-white/70 block">
-                هزینه مدل (اعتبار) - 4K
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={nanoCosts.res4K}
-                  onChange={(e) =>
-                    setNanoCosts({
-                      ...nanoCosts,
-                      res4K: Number(e.target.value),
-                    })
-                  }
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-amber-500/50 transition-colors"
-                  dir="ltr"
-                />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 text-sm font-bold">
-                  credits
-                </span>
-              </div>
+              <p className="text-xs text-white/40">
+                هزینه تولید هر تصویر توسط مدل جدید GPT-Image-2.
+              </p>
             </div>
           </div>
 
@@ -277,7 +218,7 @@ export default function FinancialTab({
 
         <h3 className="z-10 text-lg font-bold text-white">شبیه‌ساز هزینه</h3>
         <p className="z-10 text-xs text-white/50 leading-relaxed max-w-[200px]">
-          مثال برای تولید کیفیت 1K به ارزش پایه {nanoCosts.res1K} اعتبار.
+          مثال برای تولید تصویر GPT-Image-2 به ارزش پایه {gptCost} اعتبار.
         </p>
 
         <div className="z-10 w-full mt-4 space-y-3">

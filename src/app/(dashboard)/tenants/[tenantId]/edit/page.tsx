@@ -138,7 +138,7 @@ export default function EditTenantPage() {
   const [staff, setStaff] = useState<MemberState[]>([]);
 
   const [dataLoaded, setDataLoaded] = useState(false);
-  
+
   useEffect(() => {
     if (initialData && !dataLoaded) {
       setName(initialData.name || "");
@@ -180,16 +180,16 @@ export default function EditTenantPage() {
       }
       if (initialData.settings?.workingWeekdays) setWorkingDays(initialData.settings.workingWeekdays);
       if (initialData.settings?.breaks) setBreaks(initialData.settings.breaks as any);
-      
+
       const mapUserToMember = (u: any) => ({
-         type: "existing",
-         userId: u._id,
-         name: u.name,
-         newUser: { ...EMPTY_NEW_USER }
+        type: "existing",
+        userId: u._id,
+        name: u.name,
+        newUser: { ...EMPTY_NEW_USER }
       });
       if (initialData.owners?.length > 0) setOwners(initialData.owners.map(mapUserToMember));
       if (initialData.staff?.length > 0) setStaff(initialData.staff.map(mapUserToMember));
-      
+
       setDataLoaded(true);
     }
   }, [initialData, dataLoaded]);
@@ -291,7 +291,7 @@ export default function EditTenantPage() {
   const handleSubmit = async () => {
     const allErrors: Record<string, string> = {};
     for (let i = 0; i < STEPS.length; i++) {
-        Object.assign(allErrors, validateStep(i));
+      Object.assign(allErrors, validateStep(i));
     }
     if (Object.keys(allErrors).length > 0) {
       setErrors(allErrors);
@@ -356,8 +356,8 @@ export default function EditTenantPage() {
         endWorkingTime: { hour: endHour, minute: endMinute },
         workingWeekdays: workingDays,
         breaks: breaks.map(b => ({
-            startTime: { hour: b.startTime.hour, minute: b.startTime.minute },
-            endTime: { hour: b.endTime.hour, minute: b.endTime.minute }
+          startTime: { hour: b.startTime.hour, minute: b.startTime.minute },
+          endTime: { hour: b.endTime.hour, minute: b.endTime.minute }
         })),
         owners: owners.map(mapMember),
         staff: staff.map(mapMember),
@@ -440,13 +440,12 @@ export default function EditTenantPage() {
                   setErrors({});
                 }
               }}
-              className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${
-                isActive
-                  ? "border-orange-500/40 bg-orange-500/10 text-orange-300 shadow shadow-orange-500/10"
-                  : isDone
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-white/40"
-              }`}
+              className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${isActive
+                ? "border-orange-500/40 bg-orange-500/10 text-orange-300 shadow shadow-orange-500/10"
+                : isDone
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-white/10 bg-white/5 text-white/40"
+                }`}
             >
               {isDone ? <FiCheck className="text-xs" /> : step.icon}
               <span className="hidden sm:inline">{step.label}</span>
@@ -484,7 +483,7 @@ export default function EditTenantPage() {
                   icon={<FiHash />}
                   value={name}
                   onChange={setName}
-                  placeholder="مثلاً: آرایشگاه فِید سیتی"
+                  placeholder="مثلاً: رویال"
                   required
                   error={errors.name}
                 />
@@ -493,7 +492,7 @@ export default function EditTenantPage() {
                   icon={<FiType />}
                   value={title}
                   onChange={setTitle}
-                  placeholder="عنوانی که در سایت نمایش داده خواهد شد"
+                  placeholder="عنوانی که در سایت و پلتفرم نمایش داده خواهد شد"
                   required
                   error={errors.title}
                 />
@@ -535,7 +534,7 @@ export default function EditTenantPage() {
                       className={`cursor-pointer flex flex-col gap-1 rounded-2xl border px-4 py-3 text-right transition ${type === "barbers"
                         ? "border-blue-500/40 bg-blue-500/10 text-white"
                         : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
-                      }`}
+                        }`}
                     >
                       <span className="text-sm font-bold">آرایشگاه مردانه</span>
                       <span className="text-[10px] text-white/30">barbers</span>
@@ -545,7 +544,7 @@ export default function EditTenantPage() {
                       className={`cursor-pointer flex flex-col gap-1 rounded-2xl border px-4 py-3 text-right transition ${type === "barbies"
                         ? "border-pink-500/40 bg-pink-500/10 text-white"
                         : "border-white/10 bg-white/5 text-white/50 hover:bg-white/8"
-                      }`}
+                        }`}
                     >
                       <span className="text-sm font-bold">آرایشگاه زنانه</span>
                       <span className="text-[10px] text-white/30">barbies</span>
@@ -575,11 +574,10 @@ export default function EditTenantPage() {
                         <button
                           key={d._id}
                           onClick={() => setSelectedDomain(d.domain)}
-                          className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-mono font-bold transition ${
-                            activeDomain === d.domain
-                              ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                              : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
-                          }`}
+                          className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-mono font-bold transition ${activeDomain === d.domain
+                            ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                            : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+                            }`}
                           dir="ltr"
                         >
                           {activeDomain === d.domain && <FiCheck className="text-xs" />}
@@ -639,7 +637,7 @@ export default function EditTenantPage() {
                   icon={<FiType />}
                   value={heroTitle}
                   onChange={setHeroTitle}
-                  placeholder="مثلاً: بهترین سرویس آرایشگری شهر"
+                  placeholder="مثلاً: آرایشگاه رویال - همه روزه در خدمت شما"
                 />
                 <InputField
                   label="زیرعنوان هیرو"
@@ -721,13 +719,12 @@ export default function EditTenantPage() {
 
                 <div
                   onClick={() => certInputRef.current?.click()}
-                  className={`cursor-pointer flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 transition-all ${
-                    certificatePreview
-                      ? "border-emerald-500/30 bg-emerald-500/5"
-                      : errors.certificate
-                        ? "border-rose-500/40 bg-rose-500/5"
-                        : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
-                  }`}
+                  className={`cursor-pointer flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 transition-all ${certificatePreview
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : errors.certificate
+                      ? "border-rose-500/40 bg-rose-500/5"
+                      : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
+                    }`}
                 >
                   {certificatePreview ? (
                     <div className="relative">
@@ -954,7 +951,7 @@ export default function EditTenantPage() {
                         className={`cursor-pointer rounded-xl border px-4 py-2 text-xs font-bold transition ${workingDays[i]
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                           : "border-white/10 bg-white/5 text-white/30 hover:bg-white/8"
-                        }`}
+                          }`}
                       >
                         {day}
                       </button>
@@ -992,45 +989,45 @@ export default function EditTenantPage() {
                         <div className="flex-1 grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-white/3 p-3 transition group-hover:border-white/20">
                           {/* Break Start */}
                           <div className="flex items-center gap-2">
-                             <span className="text-[10px] text-white/30 whitespace-nowrap">شروع:</span>
-                             <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  min={0} max={23}
-                                  value={b.startTime.hour}
-                                  onChange={(e) => updateBreak(i, "startTime", "hour", Number(e.target.value))}
-                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
-                                />
-                                <span className="text-white/20">:</span>
-                                <input
-                                  type="number"
-                                  min={0} max={59}
-                                  value={b.startTime.minute}
-                                  onChange={(e) => updateBreak(i, "startTime", "minute", Number(e.target.value))}
-                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
-                                />
-                             </div>
+                            <span className="text-[10px] text-white/30 whitespace-nowrap">شروع:</span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={0} max={23}
+                                value={b.startTime.hour}
+                                onChange={(e) => updateBreak(i, "startTime", "hour", Number(e.target.value))}
+                                className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                              />
+                              <span className="text-white/20">:</span>
+                              <input
+                                type="number"
+                                min={0} max={59}
+                                value={b.startTime.minute}
+                                onChange={(e) => updateBreak(i, "startTime", "minute", Number(e.target.value))}
+                                className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                              />
+                            </div>
                           </div>
                           {/* Break End */}
                           <div className="flex items-center gap-2">
-                             <span className="text-[10px] text-white/30 whitespace-nowrap">پایان:</span>
-                             <div className="flex items-center gap-1">
-                                <input
-                                  type="number"
-                                  min={0} max={23}
-                                  value={b.endTime.hour}
-                                  onChange={(e) => updateBreak(i, "endTime", "hour", Number(e.target.value))}
-                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
-                                />
-                                <span className="text-white/20">:</span>
-                                <input
-                                  type="number"
-                                  min={0} max={59}
-                                  value={b.endTime.minute}
-                                  onChange={(e) => updateBreak(i, "endTime", "minute", Number(e.target.value))}
-                                  className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
-                                />
-                             </div>
+                            <span className="text-[10px] text-white/30 whitespace-nowrap">پایان:</span>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min={0} max={23}
+                                value={b.endTime.hour}
+                                onChange={(e) => updateBreak(i, "endTime", "hour", Number(e.target.value))}
+                                className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                              />
+                              <span className="text-white/20">:</span>
+                              <input
+                                type="number"
+                                min={0} max={59}
+                                value={b.endTime.minute}
+                                onChange={(e) => updateBreak(i, "endTime", "minute", Number(e.target.value))}
+                                className="w-12 rounded-xl border border-white/5 bg-white/5 px-2 py-1.5 text-xs text-white text-center outline-none focus:border-amber-500/40"
+                              />
+                            </div>
                           </div>
                         </div>
                         <button
@@ -1227,17 +1224,15 @@ function MemberCard({
           <div className="flex rounded-lg bg-white/5 p-1">
             <button
               onClick={() => onChange({ ...member, type: "existing", searchQuery: "" })}
-              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${
-                member.type === "existing" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
-              }`}
+              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${member.type === "existing" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
+                }`}
             >
               کاربر موجود
             </button>
             <button
               onClick={() => onChange({ ...member, type: "new", newUser: { ...EMPTY_NEW_USER } })}
-              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${
-                member.type === "new" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
-              }`}
+              className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${member.type === "new" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
+                }`}
             >
               کاربر جدید
             </button>
@@ -1289,28 +1284,26 @@ function MemberCard({
             dir="ltr"
           />
           <div className="md:col-span-1">
-             <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
-               <FiUser />
-               جنسیت
-             </label>
-             <div className="flex gap-2">
-                <button
-                  onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "male" } })}
-                  className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${
-                    member.newUser.gender === "male" ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-white/30"
+            <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-white/50">
+              <FiUser />
+              جنسیت
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "male" } })}
+                className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${member.newUser.gender === "male" ? "border-blue-500/40 bg-blue-500/10 text-blue-300" : "border-white/10 bg-white/5 text-white/30"
                   }`}
-                >
-                  آقا
-                </button>
-                <button
-                  onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "female" } })}
-                  className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${
-                    member.newUser.gender === "female" ? "border-pink-500/40 bg-pink-500/10 text-pink-300" : "border-white/10 bg-white/5 text-white/30"
+              >
+                آقا
+              </button>
+              <button
+                onClick={() => onChange({ ...member, newUser: { ...member.newUser, gender: "female" } })}
+                className={`cursor-pointer flex-1 py-2.5 rounded-xl border text-xs font-bold transition ${member.newUser.gender === "female" ? "border-pink-500/40 bg-pink-500/10 text-pink-300" : "border-white/10 bg-white/5 text-white/30"
                   }`}
-                >
-                  خانم
-                </button>
-             </div>
+              >
+                خانم
+              </button>
+            </div>
           </div>
           <CitySelect
             label="شهر"
@@ -1341,9 +1334,8 @@ function UserSearchField({
 
   return (
     <div className="relative">
-      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${
-        error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
-      }`}>
+      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
+        }`}>
         <FiSearch className="text-white/30" />
         <input
           value={value}
@@ -1356,13 +1348,13 @@ function UserSearchField({
           className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/20"
         />
         {selectedUserName && (
-           <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-             <FiCheck />
-             {selectedUserName}
-           </div>
+          <div className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
+            <FiCheck />
+            {selectedUserName}
+          </div>
         )}
       </div>
-      
+
       {showResults && value.length >= 3 && (
         <div className="absolute top-full left-0 right-0 z-[100] mt-2 overflow-hidden rounded-2xl border border-white/10 bg-[#1e293b]/90 shadow-2xl backdrop-blur-3xl ring-1 ring-white/5">
           {!results ? (
@@ -1382,7 +1374,7 @@ function UserSearchField({
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-xs text-white/40">
-                       <FiUser />
+                      <FiUser />
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-white">{user.name}</p>
@@ -1399,10 +1391,10 @@ function UserSearchField({
         </div>
       )}
       {error && <p className="mt-1 text-[11px] text-rose-400">{error}</p>}
-      
+
       {showResults && (
-        <div 
-          className="fixed inset-0 z-40" 
+        <div
+          className="fixed inset-0 z-40"
           onClick={() => setShowResults(false)}
         />
       )}
@@ -1430,9 +1422,8 @@ function InputField({ label, icon, value, onChange, placeholder, required, error
         {label}
         {required && <span className="text-rose-400">*</span>}
       </label>
-      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${
-        error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
-      }`}>
+      <div className={`flex items-center gap-3 rounded-2xl border bg-white/5 px-4 py-3 transition focus-within:bg-white/8 ${error ? "border-rose-500/50" : "border-white/10 focus-within:border-orange-500/40"
+        }`}>
         <input
           type={type}
           value={value}
@@ -1471,9 +1462,8 @@ function TextareaField({ label, icon, value, onChange, placeholder, required, er
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className={`rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:bg-white/8 min-h-[100px] ${
-          error ? "border-rose-500/50" : "border-white/10 focus:border-orange-500/40"
-        } placeholder:text-white/20`}
+        className={`rounded-2xl border bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:bg-white/8 min-h-[100px] ${error ? "border-rose-500/50" : "border-white/10 focus:border-orange-500/40"
+          } placeholder:text-white/20`}
       />
       {error && <p className="text-[10px] text-rose-400 mt-1">{error}</p>}
     </div>
@@ -1508,13 +1498,12 @@ function ImageUploadCard({
 
       <div
         onClick={onTrigger}
-        className={`cursor-pointer flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
-          preview
-            ? "border-emerald-500/30 bg-emerald-500/5"
-            : error
-              ? "border-rose-500/40 bg-rose-500/5"
-              : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
-        }`}
+        className={`cursor-pointer flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-center transition-all ${preview
+          ? "border-emerald-500/30 bg-emerald-500/5"
+          : error
+            ? "border-rose-500/40 bg-rose-500/5"
+            : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
+          }`}
       >
         {preview ? (
           <div className="relative">

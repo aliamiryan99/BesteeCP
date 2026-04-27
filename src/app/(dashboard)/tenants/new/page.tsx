@@ -380,10 +380,10 @@ export default function NewTenantPage() {
                 }
               }}
               className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold transition-all whitespace-nowrap ${isActive
-                  ? "border-orange-500/40 bg-orange-500/10 text-orange-300 shadow shadow-orange-500/10"
-                  : isDone
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-white/40"
+                ? "border-orange-500/40 bg-orange-500/10 text-orange-300 shadow shadow-orange-500/10"
+                : isDone
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-white/10 bg-white/5 text-white/40"
                 }`}
             >
               {isDone ? <FiCheck className="text-xs" /> : step.icon}
@@ -422,7 +422,7 @@ export default function NewTenantPage() {
                   icon={<FiHash />}
                   value={name}
                   onChange={setName}
-                  placeholder="مثلاً: آرایشگاه فِید سیتی"
+                  placeholder="مثلاً: رویال"
                   required
                   error={errors.name}
                 />
@@ -431,7 +431,7 @@ export default function NewTenantPage() {
                   icon={<FiType />}
                   value={title}
                   onChange={setTitle}
-                  placeholder="عنوانی که در سایت نمایش داده خواهد شد"
+                  placeholder="عنوانی که در سایت و پلتفرم نمایش داده خواهد شد"
                   required
                   error={errors.title}
                 />
@@ -514,8 +514,8 @@ export default function NewTenantPage() {
                           key={d._id}
                           onClick={() => setSelectedDomain(d.domain)}
                           className={`cursor-pointer flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-mono font-bold transition ${activeDomain === d.domain
-                              ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
-                              : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+                            ? "border-orange-500/40 bg-orange-500/10 text-orange-300"
+                            : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
                             }`}
                           dir="ltr"
                         >
@@ -576,7 +576,7 @@ export default function NewTenantPage() {
                   icon={<FiType />}
                   value={heroTitle}
                   onChange={setHeroTitle}
-                  placeholder="مثلاً: بهترین سرویس آرایشگری شهر"
+                  placeholder="مثلاً: آرایشگاه رویال - همه روزه در خدمت شما"
                 />
                 <InputField
                   label="زیرعنوان هیرو"
@@ -659,10 +659,10 @@ export default function NewTenantPage() {
                 <div
                   onClick={() => certInputRef.current?.click()}
                   className={`cursor-pointer flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 transition-all ${certificatePreview
-                      ? "border-emerald-500/30 bg-emerald-500/5"
-                      : errors.certificate
-                        ? "border-rose-500/40 bg-rose-500/5"
-                        : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
+                    ? "border-emerald-500/30 bg-emerald-500/5"
+                    : errors.certificate
+                      ? "border-rose-500/40 bg-rose-500/5"
+                      : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
                     }`}
                 >
                   {certificatePreview ? (
@@ -1437,13 +1437,12 @@ function ImageUploadCard({
 
       <div
         onClick={onTrigger}
-        className={`cursor-pointer flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
-          preview
-            ? "border-emerald-500/30 bg-emerald-500/5"
-            : error
-              ? "border-rose-500/40 bg-rose-500/5"
-              : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
-        }`}
+        className={`cursor-pointer flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 text-center transition-all ${preview
+          ? "border-emerald-500/30 bg-emerald-500/5"
+          : error
+            ? "border-rose-500/40 bg-rose-500/5"
+            : "border-white/15 bg-white/3 hover:border-white/30 hover:bg-white/5"
+          }`}
       >
         {preview ? (
           <div className="relative">
