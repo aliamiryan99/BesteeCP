@@ -169,6 +169,232 @@ export default function NewTenantPage() {
 
   const [fetchingAddress, setFetchingAddress] = useState(false);
 
+  // ── Local Storage Draft State & Effects ──────────────────────────────
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  const resetForm = () => {
+    setCurrentStep(0);
+    setName("");
+    setSubdomain("");
+    setDebouncedSubdomain("");
+    setTitle("");
+    setCityId("");
+    setType("barbers");
+    setPhone("");
+    setAddress("");
+    setHeroTitle("");
+    setHeroSubTitle("");
+    setAboutUsText("");
+    setLocation(null);
+    setCertificateFile(null);
+    setCertificatePreview(null);
+    setInteriorFile(null);
+    setInteriorPreview(null);
+    setOutsideFile(null);
+    setOutsidePreview(null);
+    setTeamFile(null);
+    setTeamPreview(null);
+    setInteriorMobileFile(null);
+    setInteriorMobilePreview(null);
+    setOutsideMobileFile(null);
+    setOutsideMobilePreview(null);
+    setTeamMobileFile(null);
+    setTeamMobilePreview(null);
+    setTelegram("");
+    setInstagram("");
+    setWhatsapp("");
+    setStartHour(9);
+    setStartMinute(0);
+    setEndHour(21);
+    setEndMinute(0);
+    setWorkingDays([true, true, true, true, true, true, false]);
+    setBreaks([{ startTime: { hour: 14, minute: 0 }, endTime: { hour: 17, minute: 0 } }]);
+    setOwners([{ type: "new", newUser: { ...EMPTY_NEW_USER } }]);
+    setStaff([]);
+    setTenantServices([]);
+    setIsDraftRestored(false);
+    setErrors({});
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("bestieecp_new_tenant_draft");
+    }
+  };
+
+  // Load draft on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("bestieecp_new_tenant_draft");
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+
+        const base64ToFile = (dataurl: string, filename: string): File => {
+          const arr = dataurl.split(",");
+          const mime = arr[0].match(/:(.*?);/)?.[1] || "";
+          const bstr = atob(arr[arr.length - 1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+          }
+          return new File([u8arr], filename, { type: mime });
+        };
+
+        if (data.currentStep !== undefined) setCurrentStep(data.currentStep);
+        if (data.name !== undefined) setName(data.name);
+        if (data.subdomain !== undefined) setSubdomain(data.subdomain);
+        if (data.title !== undefined) setTitle(data.title);
+        if (data.cityId !== undefined) setCityId(data.cityId);
+        if (data.type !== undefined) setType(data.type);
+        if (data.phone !== undefined) setPhone(data.phone);
+        if (data.address !== undefined) setAddress(data.address);
+        if (data.heroTitle !== undefined) setHeroTitle(data.heroTitle);
+        if (data.heroSubTitle !== undefined) setHeroSubTitle(data.heroSubTitle);
+        if (data.aboutUsText !== undefined) setAboutUsText(data.aboutUsText);
+        if (data.location !== undefined) setLocation(data.location);
+        if (data.telegram !== undefined) setTelegram(data.telegram);
+        if (data.instagram !== undefined) setInstagram(data.instagram);
+        if (data.whatsapp !== undefined) setWhatsapp(data.whatsapp);
+        if (data.startHour !== undefined) setStartHour(data.startHour);
+        if (data.startMinute !== undefined) setStartMinute(data.startMinute);
+        if (data.endHour !== undefined) setEndHour(data.endHour);
+        if (data.endMinute !== undefined) setEndMinute(data.endMinute);
+        if (data.workingDays !== undefined) setWorkingDays(data.workingDays);
+        if (data.breaks !== undefined) setBreaks(data.breaks);
+        if (data.owners !== undefined) setOwners(data.owners);
+        if (data.staff !== undefined) setStaff(data.staff);
+        if (data.tenantServices !== undefined) setTenantServices(data.tenantServices);
+
+        if (data.certificatePreview) {
+          setCertificatePreview(data.certificatePreview);
+          try { setCertificateFile(base64ToFile(data.certificatePreview, "certificate.png")); } catch (e) {}
+        }
+        if (data.interiorPreview) {
+          setInteriorPreview(data.interiorPreview);
+          try { setInteriorFile(base64ToFile(data.interiorPreview, "interior.png")); } catch (e) {}
+        }
+        if (data.outsidePreview) {
+          setOutsidePreview(data.outsidePreview);
+          try { setOutsideFile(base64ToFile(data.outsidePreview, "outside.png")); } catch (e) {}
+        }
+        if (data.teamPreview) {
+          setTeamPreview(data.teamPreview);
+          try { setTeamFile(base64ToFile(data.teamPreview, "team.png")); } catch (e) {}
+        }
+        if (data.interiorMobilePreview) {
+          setInteriorMobilePreview(data.interiorMobilePreview);
+          try { setInteriorMobileFile(base64ToFile(data.interiorMobilePreview, "interiorMobile.png")); } catch (e) {}
+        }
+        if (data.outsideMobilePreview) {
+          setOutsideMobilePreview(data.outsideMobilePreview);
+          try { setOutsideMobileFile(base64ToFile(data.outsideMobilePreview, "outsideMobile.png")); } catch (e) {}
+        }
+        if (data.teamMobilePreview) {
+          setTeamMobilePreview(data.teamMobilePreview);
+          try { setTeamMobileFile(base64ToFile(data.teamMobilePreview, "teamMobile.png")); } catch (e) {}
+        }
+
+        setIsDraftRestored(true);
+      } catch (e) {
+        console.error("Error restoring new tenant draft:", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Save draft on changes
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") return;
+
+    const data = {
+      currentStep,
+      name,
+      subdomain,
+      title,
+      cityId,
+      type,
+      phone,
+      address,
+      heroTitle,
+      heroSubTitle,
+      aboutUsText,
+      location,
+      telegram,
+      instagram,
+      whatsapp,
+      startHour,
+      startMinute,
+      endHour,
+      endMinute,
+      workingDays,
+      breaks,
+      owners,
+      staff,
+      tenantServices,
+      certificatePreview,
+      interiorPreview,
+      outsidePreview,
+      teamPreview,
+      interiorMobilePreview,
+      outsideMobilePreview,
+      teamMobilePreview,
+    };
+
+    try {
+      localStorage.setItem("bestieecp_new_tenant_draft", JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to save full draft to localStorage (quota likely exceeded):", e);
+      try {
+        const fallbackData = {
+          ...data,
+          certificatePreview: null,
+          interiorPreview: null,
+          outsidePreview: null,
+          teamPreview: null,
+          interiorMobilePreview: null,
+          outsideMobilePreview: null,
+          teamMobilePreview: null,
+        };
+        localStorage.setItem("bestieecp_new_tenant_draft", JSON.stringify(fallbackData));
+      } catch (innerError) {
+        console.error("Failed to save even basic metadata to localStorage:", innerError);
+      }
+    }
+  }, [
+    isLoaded,
+    currentStep,
+    name,
+    subdomain,
+    title,
+    cityId,
+    type,
+    phone,
+    address,
+    heroTitle,
+    heroSubTitle,
+    aboutUsText,
+    location,
+    telegram,
+    instagram,
+    whatsapp,
+    startHour,
+    startMinute,
+    endHour,
+    endMinute,
+    workingDays,
+    breaks,
+    owners,
+    staff,
+    tenantServices,
+    certificatePreview,
+    interiorPreview,
+    outsidePreview,
+    teamPreview,
+    interiorMobilePreview,
+    outsideMobilePreview,
+    teamMobilePreview,
+  ]);
+
   // Validation per step
   const validateStep = (step: number): Record<string, string> => {
     const errs: Record<string, string> = {};
@@ -365,6 +591,9 @@ export default function NewTenantPage() {
       };
 
       await createTenant(payload);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("bestieecp_new_tenant_draft");
+      }
       pushToast({ type: "success", title: "موفق", message: `شعبه ${name} با موفقیت ایجاد شد` });
       router.push("/tenants");
     } catch (e: any) {
@@ -459,6 +688,24 @@ export default function NewTenantPage() {
           بازگشت به لیست
         </button>
       </div>
+
+      {isDraftRestored && (
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-orange-500/20 bg-orange-500/10 p-4 text-orange-300 shadow shadow-orange-500/5">
+          <div className="flex items-center gap-3">
+            <FiAlertCircle className="text-xl shrink-0" />
+            <div>
+              <p className="text-sm font-bold">پیش‌نویس ذخیره شده بازیابی شد</p>
+              <p className="text-xs text-orange-300/70 mt-0.5">شما در حال ادامه ثبت شعبه از پیش‌نویس قبلی هستید. برای شروع مجدد فرم را بازنشانی کنید.</p>
+            </div>
+          </div>
+          <button
+            onClick={resetForm}
+            className="cursor-pointer shrink-0 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 px-4 py-2 text-xs font-black text-orange-300 transition-colors"
+          >
+            شروع مجدد
+          </button>
+        </div>
+      )}
 
       {/* ── Steps Progress ────────────────────────────────────── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
