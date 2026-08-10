@@ -1,12 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
 import { Id } from "@backend/dataModel";
 import { FiPlus, FiImage, FiEdit2, FiTrash2, FiChevronLeft, FiChevronRight, FiAlertCircle, FiInfo, FiFolder } from "react-icons/fi";
 import { useToastStore } from "@/store/toastStore";
 import { motion } from "framer-motion";
+
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || typeof window === "undefined") return null;
+  return createPortal(children, document.body);
+}
 
 type TenantType = "barbers" | "barbies";
 const adminServices = (api as any).services.adminServices;
@@ -450,13 +461,18 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-lg my-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col"
+    <Portal>
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
       >
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="w-full max-w-lg my-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col"
+        >
         <div className="border-b border-white/10 bg-white/5 p-5 shrink-0">
           <h2 className="text-xl font-bold text-white">{initialData ? "ویرایش گروه مدل" : "افزودن گروه مدل"}</h2>
         </div>
@@ -523,7 +539,8 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
         </form>
       </motion.div>
     </div>
-  );
+  </Portal>
+);
 }
 
 function ServiceModal({ tenantType, initialData, allServices, onClose }: { tenantType: TenantType, initialData: any, allServices: any[], onClose: () => void }) {
@@ -595,120 +612,126 @@ function ServiceModal({ tenantType, initialData, allServices, onClose }: { tenan
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-lg my-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col"
+    <Portal>
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
       >
-        <div className="border-b border-white/10 bg-white/5 p-5 shrink-0">
-          <h2 className="text-xl font-bold text-white">{initialData ? "ویرایش خدمت" : "افزودن خدمت جدید"}</h2>
-        </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-4">
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="w-full max-w-lg my-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col max-h-[90vh]"
+        >
+          <div className="border-b border-white/10 bg-white/5 p-5 shrink-0">
+            <h2 className="text-xl font-bold text-white">{initialData ? "ویرایش خدمت" : "افزودن خدمت جدید"}</h2>
+          </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-white/80">نام خدمت (فارسی)</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  placeholder="مثال: کوتاهی مو"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-bold text-white/80">نام انگلیسی (EnName)</label>
+                <input
+                  type="text"
+                  value={enName}
+                  onChange={(e) => setEnName(e.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  placeholder="مثال: Haircut"
+                />
+              </div>
+            </div>
+            
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-white/80">نام خدمت (فارسی)</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                placeholder="مثال: کوتاهی مو"
+              <label className="text-sm font-bold text-white/80">توضیحات (اختیاری)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full min-h-[100px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none"
+                placeholder="توضیحاتی درباره این خدمت بنویسید..."
               />
             </div>
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-col">
+                <span className="font-bold text-white">دارای مدل‌های زیرمجموعه</span>
+                <span className="text-xs text-white/50">آیا برای این خدمت مدل‌های مختلفی (مثل مدل موی مختلف) وجود دارد؟</span>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input type="checkbox" className="peer sr-only" checked={hasModels} onChange={(e) => setHasModels(e.target.checked)} />
+                <div className="peer h-6 w-11 rounded-full bg-slate-700 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-col">
+                <span className="font-bold text-white">مناسب برای پنل هوش مصنوعی</span>
+                <span className="text-xs text-white/50">آیا این خدمت قابلیت استفاده و نمایش در پنل هوش مصنوعی را دارد؟</span>
+              </div>
+              <label className="relative inline-flex cursor-pointer items-center">
+                <input type="checkbox" className="peer sr-only" checked={isSutibleForAI} onChange={(e) => setIsSutibleForAI(e.target.checked)} />
+                <div className="peer h-6 w-11 rounded-full bg-slate-700 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
+              </label>
+            </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-bold text-white/80">نام انگلیسی (EnName)</label>
+              <label className="text-sm font-bold text-white/80">تداخل با سایر خدمات (Overlapping Services)</label>
+              <p className="text-xs text-white/50">خدماتی که امکان انجام همزمان آنها با این خدمت وجود ندارد را انتخاب کنید.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-3 custom-scrollbar">
+                {allServices.filter(s => s._id !== initialData?._id).map(service => (
+                  <label key={service._id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-xl transition">
+                    <input
+                      type="checkbox"
+                      checked={overlapingServies.includes(service._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setOverlapingServies(prev => [...prev, service._id]);
+                        } else {
+                          setOverlapingServies(prev => prev.filter(id => id !== service._id));
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-white/20 bg-slate-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900"
+                    />
+                    <span className="text-sm text-white/80 select-none truncate">
+                      {service.name} {service.enName ? `(${service.enName})` : ""}
+                    </span>
+                  </label>
+                ))}
+                {allServices.filter(s => s._id !== initialData?._id).length === 0 && (
+                  <span className="text-sm text-white/50 col-span-2 text-center py-2">خدمت دیگری برای انتخاب وجود ندارد.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-bold text-white/80">تصویر خدمت</label>
               <input
-                type="text"
-                value={enName}
-                onChange={(e) => setEnName(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                placeholder="مثال: Haircut"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:bg-white/20 transition-all cursor-pointer"
               />
             </div>
-          </div>
-          
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-white/80">توضیحات (اختیاری)</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full min-h-[100px] rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 resize-none"
-              placeholder="توضیحاتی درباره این خدمت بنویسید..."
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex flex-col">
-              <span className="font-bold text-white">دارای مدل‌های زیرمجموعه</span>
-              <span className="text-xs text-white/50">آیا برای این خدمت مدل‌های مختلفی (مثل مدل موی مختلف) وجود دارد؟</span>
+            <div className="mt-4 flex items-center justify-end gap-3 border-t border-white/10 pt-5 shrink-0">
+              <button type="button" onClick={onClose} disabled={isSubmitting} className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition">
+                انصراف
+              </button>
+              <button type="submit" disabled={isSubmitting} className="cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 active:scale-95 disabled:opacity-50">
+                {isSubmitting ? "در حال ذخیره..." : "ذخیره خدمت"}
+              </button>
             </div>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" checked={hasModels} onChange={(e) => setHasModels(e.target.checked)} />
-              <div className="peer h-6 w-11 rounded-full bg-slate-700 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-emerald-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex flex-col">
-              <span className="font-bold text-white">مناسب برای پنل هوش مصنوعی</span>
-              <span className="text-xs text-white/50">آیا این خدمت قابلیت استفاده و نمایش در پنل هوش مصنوعی را دارد؟</span>
-            </div>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" checked={isSutibleForAI} onChange={(e) => setIsSutibleForAI(e.target.checked)} />
-              <div className="peer h-6 w-11 rounded-full bg-slate-700 after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-purple-500 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none"></div>
-            </label>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-white/80">تداخل با سایر خدمات (Overlapping Services)</label>
-            <p className="text-xs text-white/50">خدماتی که امکان انجام همزمان آنها با این خدمت وجود ندارد را انتخاب کنید.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto rounded-2xl border border-white/10 bg-white/5 p-3 custom-scrollbar">
-              {allServices.filter(s => s._id !== initialData?._id).map(service => (
-                <label key={service._id} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-xl transition">
-                  <input
-                    type="checkbox"
-                    checked={overlapingServies.includes(service._id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setOverlapingServies(prev => [...prev, service._id]);
-                      } else {
-                        setOverlapingServies(prev => prev.filter(id => id !== service._id));
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-white/20 bg-slate-800 text-amber-500 focus:ring-amber-500 focus:ring-offset-slate-900"
-                  />
-                  <span className="text-sm text-white/80 select-none truncate">
-                    {service.name} {service.enName ? `(${service.enName})` : ""}
-                  </span>
-                </label>
-              ))}
-              {allServices.filter(s => s._id !== initialData?._id).length === 0 && (
-                <span className="text-sm text-white/50 col-span-2 text-center py-2">خدمت دیگری برای انتخاب وجود ندارد.</span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-bold text-white/80">تصویر خدمت</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-              className="block w-full text-sm text-slate-400 file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-4 file:py-2.5 file:text-sm file:font-semibold file:text-white hover:file:bg-white/20 transition-all cursor-pointer"
-            />
-          </div>
-          <div className="mt-4 flex items-center justify-end gap-3 border-t border-white/10 pt-5 shrink-0">
-            <button type="button" onClick={onClose} disabled={isSubmitting} className="cursor-pointer rounded-xl px-5 py-2.5 text-sm font-bold text-white/60 hover:bg-white/5 hover:text-white transition">
-              انصراف
-            </button>
-            <button type="submit" disabled={isSubmitting} className="cursor-pointer rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 active:scale-95 disabled:opacity-50">
-              {isSubmitting ? "در حال ذخیره..." : "ذخیره خدمت"}
-            </button>
-          </div>
-        </form>
-      </motion.div>
-    </div>
+          </form>
+        </motion.div>
+      </div>
+    </Portal>
   );
 }
 
@@ -726,6 +749,7 @@ function ModelModal({ tenantType, serviceId, initialData, onClose }: { tenantTyp
   const [maintenanceLevel, setMaintenanceLevel] = useState(initialData?.maintenanceLevel || "");
   const [tips, setTips] = useState(initialData?.tips || "");
   const [promptDesc, setPromptDesc] = useState(initialData?.promptDesc || "");
+  const [previewImagePrompt, setPreviewImagePrompt] = useState(initialData?.previewImagePrompt || "");
   const [isSutibleForAI, setIsSutibleForAI] = useState(initialData?.isSutibleForAI ?? true);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -767,6 +791,7 @@ function ModelModal({ tenantType, serviceId, initialData, onClose }: { tenantTyp
         maintenanceLevel: maintenanceLevel || undefined,
         tips: tips || undefined,
         promptDesc: promptDesc || undefined,
+        previewImagePrompt: previewImagePrompt || undefined,
         isSutibleForAI,
         imageId,
       };
@@ -787,13 +812,18 @@ function ModelModal({ tenantType, serviceId, initialData, onClose }: { tenantTyp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-2xl my-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col max-h-[90vh]"
+    <Portal>
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto"
       >
+        <motion.div
+          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="w-full max-w-2xl my-auto overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl flex flex-col max-h-[90vh]"
+        >
         <div className="border-b border-white/10 bg-white/5 p-5 shrink-0">
           <h2 className="text-xl font-bold text-white">{initialData ? "ویرایش مدل" : "افزودن مدل جدید"}</h2>
         </div>
@@ -921,6 +951,17 @@ function ModelModal({ tenantType, serviceId, initialData, onClose }: { tenantTyp
           </div>
 
           <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-white/80">پرامپت پیش‌نمایش تصویر (Preview Image Prompt)</label>
+            <textarea
+              value={previewImagePrompt}
+              onChange={(e) => setPreviewImagePrompt(e.target.value)}
+              className="w-full min-h-[100px] rounded-2xl border border-cyan-500/30 bg-cyan-500/5 px-4 py-3 text-cyan-100 placeholder-white/30 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 resize-y text-left dir-ltr"
+              placeholder="A professional studio headshot of a model..."
+              dir="ltr"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-white/80">توضیحات کلی</label>
             <textarea
               value={description}
@@ -962,5 +1003,6 @@ function ModelModal({ tenantType, serviceId, initialData, onClose }: { tenantTyp
         </form>
       </motion.div>
     </div>
-  );
+  </Portal>
+);
 }

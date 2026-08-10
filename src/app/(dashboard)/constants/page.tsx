@@ -10,14 +10,16 @@ import {
   FiSlash,
   FiDatabase,
   FiAward,
+  FiScissors,
 } from "react-icons/fi";
 
 import CitiesTab from "./components/CitiesTab";
 import ServicesTab from "./components/ServicesTab";
 import PlansTab from "./components/PlansTab";
+import TenantSettingsTab from "./components/TenantSettingsTab";
 
 export default function ConstantsPage() {
-  const [activeTab, setActiveTab] = useState<"cities" | "services" | "plans">("cities");
+  const [activeTab, setActiveTab] = useState<"cities" | "services" | "plans" | "tenantSettings">("cities");
   const me = useQuery(api.users.auth.me);
   const router = useRouter();
 
@@ -46,6 +48,7 @@ export default function ConstantsPage() {
 
   const tabs = [
     { id: "cities", label: "شهرها", icon: FiMapPin, show: true },
+    { id: "tenantSettings", label: "تنظیمات شعب", icon: FiScissors, show: me.role === "creator" },
     { id: "services", label: "خدمات و مدل‌ها", icon: FiGrid, show: me.role === "creator" },
     { id: "plans", label: "پلان‌ها", icon: FiAward, show: me.role === "creator" },
   ];
@@ -85,6 +88,7 @@ export default function ConstantsPage() {
       {/* ── Tab Content ── */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
         {activeTab === "cities" && <CitiesTab />}
+        {activeTab === "tenantSettings" && <TenantSettingsTab />}
         {activeTab === "services" && <ServicesTab />}
         {activeTab === "plans" && <PlansTab />}
       </div>
