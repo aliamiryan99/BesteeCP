@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@backend/api";
 import { Id } from "@backend/dataModel";
-import { FiPlus, FiImage, FiEdit2, FiTrash2, FiChevronLeft, FiChevronRight, FiAlertCircle, FiInfo, FiFolder } from "react-icons/fi";
+import { FiPlus, FiImage, FiEdit2, FiTrash2, FiChevronLeft, FiChevronRight, FiAlertCircle, FiInfo, FiFolder, FiSearch, FiFilter, FiX } from "react-icons/fi";
 import { useToastStore } from "@/store/toastStore";
 import { motion } from "framer-motion";
 
@@ -75,6 +75,41 @@ function GroupsList({ tenantType, onBack }: { tenantType: TenantType, onBack: ()
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<any>(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>("");
+  const [independentFilter, setIndependentFilter] = useState<"all" | "independent" | "dependent">("all");
+
+  const filteredGroups = useMemo(() => {
+    if (!groups) return [];
+    return groups.filter((group: any) => {
+      // 1. Search Query Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const nameMatch = group.name?.toLowerCase().includes(q);
+        const enNameMatch = group.enName?.toLowerCase().includes(q);
+        const serviceNameMatch = group.serviceName?.toLowerCase().includes(q);
+        if (!nameMatch && !enNameMatch && !serviceNameMatch) return false;
+      }
+      // 2. Service Filter
+      if (selectedServiceFilter && group.serviceId !== selectedServiceFilter) {
+        return false;
+      }
+      // 3. Independent Filter
+      if (independentFilter === "independent" && !group.independent) return false;
+      if (independentFilter === "dependent" && group.independent) return false;
+
+      return true;
+    });
+  }, [groups, searchQuery, selectedServiceFilter, independentFilter]);
+
+  const hasActiveFilters = searchQuery !== "" || selectedServiceFilter !== "" || independentFilter !== "all";
+
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedServiceFilter("");
+    setIndependentFilter("all");
+  };
+
   const handleDelete = async (id: Id<"model_groups">) => {
     if (!confirm("آیا از حذف این گروه اطمینان دارید؟ مدل‌های این گروه بدون گروه خواهند شد.")) return;
     try {
@@ -114,13 +149,103 @@ function GroupsList({ tenantType, onBack }: { tenantType: TenantType, onBack: ()
         </button>
       </div>
 
+      {/* Search & Filter Controls */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+        {/* Search Input */}
+        <div className="relative flex-1">
+          <FiSearch className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/40 text-lg" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="جستجو بر اساس نام گروه، نام انگلیسی یا خدمت..."
+            className="w-full rounded-xl border border-white/10 bg-slate-900/60 py-2.5 pr-10 pl-10 text-sm text-white placeholder-white/40 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="cursor-pointer absolute left-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+            >
+              <FiX />
+            </button>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Service Filter */}
+          <div className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white">
+            <FiFilter className="text-white/40" />
+            <select
+              value={selectedServiceFilter}
+              onChange={(e) => setSelectedServiceFilter(e.target.value)}
+              className="bg-transparent text-xs font-medium text-white focus:outline-none cursor-pointer"
+            >
+              <option value="" className="bg-slate-900 text-white">همه خدمات</option>
+              {services?.map((svc: any) => (
+                <option key={svc._id} value={svc._id} className="bg-slate-900 text-white">
+                  {svc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Group Type Filter */}
+          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-slate-900/60 p-1 text-xs">
+            {(
+              [
+                { id: "all", label: "همه" },
+                { id: "independent", label: "مستقل" },
+                { id: "dependent", label: "وابسته" },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setIndependentFilter(item.id)}
+                className={`cursor-pointer rounded-lg px-2.5 py-1.5 font-bold transition-all ${
+                  independentFilter === item.id
+                    ? "bg-purple-500 text-white shadow-md"
+                    : "text-white/60 hover:text-white"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Reset Filters Button */}
+          {hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="cursor-pointer flex items-center gap-1 rounded-xl bg-rose-500/20 px-3 py-2 text-xs font-bold text-rose-300 transition hover:bg-rose-500/30"
+              title="پاکسازی فیلترها"
+            >
+              <FiX />
+              پاکسازی
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Group Count Status */}
+      {groups && (
+        <div className="flex items-center justify-between px-1 text-xs text-white/50">
+          <span>
+            نمایش {filteredGroups.length} از {groups.length} گروه
+          </span>
+          {hasActiveFilters && <span>(فیلتر شده)</span>}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {groups === undefined ? (
           <div className="col-span-full py-10 text-center text-white/50">در حال بارگذاری...</div>
         ) : groups.length === 0 ? (
           <div className="col-span-full py-10 text-center text-white/50">هیچ گروهی برای این بخش تعریف نشده است.</div>
+        ) : filteredGroups.length === 0 ? (
+          <div className="col-span-full py-10 text-center text-white/50">هیچ گروهی با مشخصات فیلتر شده یافت نشد.</div>
         ) : (
-          groups.map((group: any) => (
+          filteredGroups.map((group: any) => (
             <motion.div
               key={group._id}
               layoutId={group._id}
@@ -136,6 +261,11 @@ function GroupsList({ tenantType, onBack }: { tenantType: TenantType, onBack: ()
                     {group.independent && (
                       <span className="rounded-md bg-purple-500/20 px-1.5 py-0.5 text-[10px] font-bold text-purple-300 ring-1 ring-purple-500/30">
                         مستقل
+                      </span>
+                    )}
+                    {group.priority !== undefined && group.priority !== null && (
+                      <span className="rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+                        اولویت: {group.priority}
                       </span>
                     )}
                   </div>
@@ -420,6 +550,7 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
   const [name, setName] = useState(initialData?.name || "");
   const [enName, setEnName] = useState(initialData?.enName || "");
   const [independent, setIndependent] = useState(initialData?.independent || false);
+  const [priority, setPriority] = useState<number | "">(initialData?.priority ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const pushToast = useToastStore((s) => s.push);
@@ -433,6 +564,7 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
 
     setIsSubmitting(true);
     try {
+      const parsedPriority = priority === "" ? undefined : Number(priority);
       if (initialData) {
         await updateGroup({
           targetId: initialData._id,
@@ -440,6 +572,7 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
           name,
           enName: enName || undefined,
           independent,
+          priority: parsedPriority,
         });
         pushToast({ type: "success", title: "موفق", message: "گروه بروزرسانی شد" });
       } else {
@@ -449,6 +582,7 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
           name,
           enName: enName || undefined,
           independent,
+          priority: parsedPriority,
         });
         pushToast({ type: "success", title: "موفق", message: "گروه با موفقیت ایجاد شد" });
       }
@@ -515,6 +649,18 @@ function GroupModal({ tenantType, services, initialData, onClose }: { tenantType
                 dir="ltr"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-bold text-white/80">اولویت نمایش (Priority Level)</label>
+            <input
+              type="number"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value === "" ? "" : Number(e.target.value))}
+              className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+              placeholder="مثال: 100 (عددهای بزرگتر اولویت بالاتری دارند)"
+            />
+            <span className="text-xs text-white/50">گروه‌هایی با اولویت بالاتر (عدد بزرگتر) در پنل هوش مصنوعی اول نمایش داده می‌شوند.</span>
           </div>
 
           <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-4">
