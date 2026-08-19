@@ -154,3 +154,133 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(248, 250, 252, 0.45);
 }
+
+/* ═══════════════════════════════════════════════════════
+   REACT-MULTI-DATE-PICKER STYLES (DARK & YELLOW)
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  --rmdp-primary-yellow: #f59e0b;
+  --rmdp-secondary-yellow: #d97706;
+  --rmdp-shadow-yellow: #fbbf24;
+  --rmdp-today-yellow: #fde68a;
+  --rmdp-hover-yellow: #fef3c7;
+  --rmdp-deselect-yellow: #b45309;
+}
+
+.bg-dark.rmdp-wrapper,
+.bg-dark .rmdp-month-picker,
+.bg-dark .rmdp-year-picker,
+.bg-dark .rmdp-time-picker div input,
+.rmdp-container .bg-dark.ep-arrow::after {
+  background-color: #111827 !important;
+  color: #c4c7ca !important;
+  border-radius: 14px;
+}
+
+.bg-dark .rmdp-day:not(.rmdp-deactive),
+.bg-dark .rmdp-time-picker div .rmdp-am,
+.bg-dark .rmdp-header-values,
+.bg-dark .rmdp-panel-header {
+  color: #c4c7ca;
+}
+
+.bg-dark .rmdp-day.rmdp-range {
+  color: white;
+}
+
+.bg-dark .rmdp-panel-body li {
+  color: #f5f5f5;
+}
+
+.bg-dark .rmdp-day.rmdp-deactive,
+.bg-dark .rmdp-day.rmdp-disabled {
+  color: #87898b;
+}
+
+.rmdp-container .bg-dark.ep-arrow[direction="top"] {
+  border-bottom: 1px solid #111827;
+}
+
+.rmdp-container .bg-dark.ep-arrow[direction="left"] {
+  border-right: 1px solid #111827;
+}
+
+.rmdp-container .bg-dark.ep-arrow[direction="right"] {
+  border-left: 1px solid #111827;
+}
+
+.rmdp-container .bg-dark.ep-arrow[direction="bottom"] {
+  border-top: 1px solid #111827;
+}
+
+.yellow .rmdp-wrapper {
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.yellow .rmdp-panel-body li {
+  background-color: var(--rmdp-primary-yellow);
+  box-shadow: 0 0 2px var(--rmdp-secondary-yellow);
+}
+
+.yellow .rmdp-week-day {
+  color: var(--rmdp-primary-yellow);
+}
+
+.yellow .rmdp-day.rmdp-deactive {
+  color: var(--rmdp-secondary-yellow);
+}
+
+.yellow .rmdp-range {
+  background-color: var(--rmdp-primary-yellow);
+  box-shadow: 0 0 3px var(--rmdp-shadow-yellow);
+}
+
+.yellow .rmdp-arrow {
+  border: solid var(--rmdp-primary-yellow);
+  border-width: 0 2px 2px 0;
+}
+
+.yellow .rmdp-arrow-container:hover {
+  background-color: var(--rmdp-primary-yellow);
+  box-shadow: 0 0 3px var(--rmdp-secondary-yellow);
+}
+
+.yellow .rmdp-panel-body::-webkit-scrollbar-thumb {
+  background: var(--rmdp-primary-yellow);
+}
+
+.yellow .rmdp-day.rmdp-today span {
+  background-color: var(--rmdp-today-yellow);
+  color: #111827;
+}
+
+.yellow .rmdp-rtl .rmdp-panel {
+  border-left: unset;
+  border-right: 1px solid var(--rmdp-secondary-yellow);
+}
+
+.yellow .rmdp-day.rmdp-selected span:not(.highlight) {
+  background-color: var(--rmdp-primary-yellow);
+  box-shadow: 0 0 3px var(--rmdp-shadow-yellow);
+  color: #111827;
+}
+
+.yellow .rmdp-day:not(.rmdp-day-hidden) span:hover {
+  background-color: var(--rmdp-hover-yellow) !important;
+  color: #111827;
+}
+
+.yellow .rmdp-action-button {
+  color: var(--rmdp-primary-yellow);
+}
+
+.yellow .rmdp-button:not(.rmdp-action-button) {
+  background-color: var(--rmdp-primary-yellow);
+  color: #111827;
+}
+
+.yellow .rmdp-button:not(.rmdp-action-button):hover {
+  background-color: var(--rmdp-deselect-yellow);
+}

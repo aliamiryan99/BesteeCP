@@ -15,10 +15,12 @@ import {
   FiBarChart2,
   FiMessageSquare,
   FiAward,
+  FiSend,
 } from "react-icons/fi";
 import { useToastStore } from "@/store/toastStore";
 import FinancialReportsTab from "./components/FinancialReportsTab";
 import FinancialSmsTab from "./components/FinancialSmsTab";
+import FinancialSettlementsTab from "./components/FinancialSettlementsTab";
 
 export default function FinancialPage() {
   const me = useQuery(api.users.auth.me);
@@ -27,7 +29,9 @@ export default function FinancialPage() {
   const updateSettings = useMutation(api.ai.settings.update);
   const pushToast = useToastStore((state) => state.push);
 
-  const [activeTab, setActiveTab] = useState<"settings" | "reports" | "sms" | "promoter">("reports");
+  const [activeTab, setActiveTab] = useState<
+    "settings" | "reports" | "sms" | "promoter" | "settlements"
+  >("settlements");
   const [defaultGateway, setDefaultGateway] = useState<"zarinpal" | "jibit" | "zibal">("zarinpal");
   const [scorePrice, setScorePrice] = useState<number>(1500000);
   const [isSaving, setIsSaving] = useState(false);
@@ -97,6 +101,7 @@ export default function FinancialPage() {
   };
 
   const tabs = [
+    { id: "settlements", label: "تسویه حساب سالن‌ها و درگاه لوکال", icon: FiSend },
     { id: "reports", label: "گزارش‌های مالی", icon: FiBarChart2 },
     { id: "sms", label: "گزارش پیامک‌ها", icon: FiMessageSquare },
     { id: "settings", label: "تنظیمات درگاه", icon: FiSettings },
@@ -142,6 +147,8 @@ export default function FinancialPage() {
 
       {/* ── Tab Content ── */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+        {activeTab === "settlements" && <FinancialSettlementsTab />}
+
         {activeTab === "reports" && <FinancialReportsTab />}
 
         {activeTab === "sms" && <FinancialSmsTab />}

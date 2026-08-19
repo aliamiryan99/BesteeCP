@@ -4,8 +4,6 @@ import React from "react";
 import DatePicker, { DateObject } from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import "react-multi-date-picker/styles/colors/yellow.css";
-import "react-multi-date-picker/styles/backgrounds/bg-dark.css";
 
 interface PersianDatePickerProps {
   value: string;
