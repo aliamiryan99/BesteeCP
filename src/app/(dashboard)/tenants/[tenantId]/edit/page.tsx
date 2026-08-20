@@ -69,13 +69,16 @@ interface MemberState {
   };
 }
 
-const EMPTY_NEW_USER = {
-  name: "",
-  phone: "",
-  email: "",
-  gender: "male" as const,
-  cityId: "",
-};
+const createEmptyMember = (tenantType: "barbers" | "barbies" = "barbers", defaultCityId: string = ""): MemberState => ({
+  type: "new",
+  newUser: {
+    name: "",
+    phone: "",
+    email: "",
+    gender: tenantType === "barbies" ? "female" : "male",
+    cityId: defaultCityId || "",
+  },
+});
 
 type SiteImageField = "certificate" | "interior" | "outside" | "team" | "interiorMobile" | "outsideMobile" | "teamMobile";
 
@@ -140,7 +143,7 @@ export default function EditTenantPage() {
   const [breaks, setBreaks] = useState([{ startTime: { hour: 13, minute: 0 }, endTime: { hour: 14, minute: 0 } }]);
 
   // ── Step 5: Members ──────────────────────────────────────────────────
-  const [owners, setOwners] = useState<MemberState[]>([{ type: "new", newUser: { ...EMPTY_NEW_USER } }]);
+  const [owners, setOwners] = useState<MemberState[]>([createEmptyMember("barbers", "")]);
   const [staff, setStaff] = useState<MemberState[]>([]);
 
   // ── Step 5: Services & Models ───────────────────────────────────────
@@ -202,10 +205,10 @@ export default function EditTenantPage() {
       if (initialData.settings?.breaks) setBreaks(initialData.settings.breaks as any);
 
       const mapUserToMember = (u: any) => ({
-        type: "existing",
+        type: "existing" as const,
         userId: u._id,
         name: u.name,
-        newUser: { ...EMPTY_NEW_USER }
+        newUser: createEmptyMember(initialData.type || "barbers", initialData.cityId || "").newUser,
       });
       if (initialData.owners?.length > 0) setOwners(initialData.owners.map(mapUserToMember));
       if (initialData.staff?.length > 0) setStaff(initialData.staff.map(mapUserToMember));
@@ -1141,7 +1144,7 @@ export default function EditTenantPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setOwners([...owners, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    onClick={() => setOwners([...owners, createEmptyMember(type, cityId)])}
                     className="cursor-pointer flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition"
                   >
                     <FiPlus />
@@ -1158,6 +1161,8 @@ export default function EditTenantPage() {
                       index={idx}
                       errors={errors}
                       prefix="owner"
+                      tenantType={type}
+                      defaultCityId={cityId}
                       onRemove={() => setOwners(owners.filter((_, i) => i !== idx))}
                       onChange={(updated) => {
                         const next = [...owners];
@@ -1188,7 +1193,7 @@ export default function EditTenantPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setStaff([...staff, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    onClick={() => setStaff([...staff, createEmptyMember(type, cityId)])}
                     className="cursor-pointer flex items-center gap-2 rounded-xl bg-blue-500/10 px-3 py-2 text-xs font-bold text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition"
                   >
                     <FiPlus />
@@ -1211,6 +1216,8 @@ export default function EditTenantPage() {
                         index={idx}
                         errors={errors}
                         prefix="staff"
+                        tenantType={type}
+                        defaultCityId={cityId}
                         onRemove={() => setStaff(staff.filter((_, i) => i !== idx))}
                         onChange={(updated) => {
                           const next = [...staff];
@@ -1321,6 +1328,8 @@ function MemberCard({
   index,
   errors,
   prefix,
+  tenantType,
+  defaultCityId,
   onRemove,
   onChange,
 }: {
@@ -1329,6 +1338,8 @@ function MemberCard({
   index: number;
   errors: Record<string, string>;
   prefix: string;
+  tenantType: "barbers" | "barbies";
+  defaultCityId: string;
   onRemove: () => void;
   onChange: (m: MemberState) => void;
 }) {
@@ -1352,7 +1363,17 @@ function MemberCard({
               کاربر موجود
             </button>
             <button
-              onClick={() => onChange({ ...member, type: "new", newUser: { ...EMPTY_NEW_USER } })}
+              onClick={() => onChange({
+                ...member,
+                type: "new",
+                newUser: {
+                  name: member.name || member.newUser?.name || "",
+                  phone: member.newUser?.phone || "",
+                  email: member.newUser?.email || "",
+                  gender: member.newUser?.gender || (tenantType === "barbies" ? "female" : "male"),
+                  cityId: member.newUser?.cityId || defaultCityId || "",
+                }
+              })}
               className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${member.type === "new" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
                 }`}
             >

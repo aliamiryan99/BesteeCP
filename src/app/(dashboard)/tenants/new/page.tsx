@@ -69,13 +69,16 @@ interface MemberState {
   };
 }
 
-const EMPTY_NEW_USER = {
-  name: "",
-  phone: "",
-  email: "",
-  gender: "male" as const,
-  cityId: "",
-};
+const createEmptyMember = (tenantType: "barbers" | "barbies" = "barbers", defaultCityId: string = ""): MemberState => ({
+  type: "new",
+  newUser: {
+    name: "",
+    phone: "",
+    email: "",
+    gender: tenantType === "barbies" ? "female" : "male",
+    cityId: defaultCityId || "",
+  },
+});
 
 type SiteImageField = "certificate" | "interior" | "outside" | "team" | "interiorMobile" | "outsideMobile" | "teamMobile";
 
@@ -155,7 +158,7 @@ export default function NewTenantPage() {
   const [breaks, setBreaks] = useState([{ startTime: { hour: 14, minute: 0 }, endTime: { hour: 17, minute: 0 } }]);
 
   // ── Step 5: Members ──────────────────────────────────────────────────
-  const [owners, setOwners] = useState<MemberState[]>([{ type: "new", newUser: { ...EMPTY_NEW_USER } }]);
+  const [owners, setOwners] = useState<MemberState[]>([createEmptyMember("barbers", "")]);
   const [staff, setStaff] = useState<MemberState[]>([]);
 
 
@@ -210,7 +213,7 @@ export default function NewTenantPage() {
     setEndMinute(0);
     setWorkingDays([true, true, true, true, true, true, false]);
     setBreaks([{ startTime: { hour: 14, minute: 0 }, endTime: { hour: 17, minute: 0 } }]);
-    setOwners([{ type: "new", newUser: { ...EMPTY_NEW_USER } }]);
+    setOwners([createEmptyMember("barbers", "")]);
     setStaff([]);
     setTenantServices([]);
     setIsDraftRestored(false);
@@ -1353,7 +1356,7 @@ export default function NewTenantPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setOwners([...owners, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    onClick={() => setOwners([...owners, createEmptyMember(type, cityId)])}
                     className="cursor-pointer flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-bold text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition"
                   >
                     <FiPlus />
@@ -1370,6 +1373,8 @@ export default function NewTenantPage() {
                       index={idx}
                       errors={errors}
                       prefix="owner"
+                      tenantType={type}
+                      defaultCityId={cityId}
                       onRemove={() => setOwners(owners.filter((_, i) => i !== idx))}
                       onChange={(updated) => {
                         const next = [...owners];
@@ -1400,7 +1405,7 @@ export default function NewTenantPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setStaff([...staff, { type: "new", newUser: { ...EMPTY_NEW_USER } }])}
+                    onClick={() => setStaff([...staff, createEmptyMember(type, cityId)])}
                     className="cursor-pointer flex items-center gap-2 rounded-xl bg-blue-500/10 px-3 py-2 text-xs font-bold text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition"
                   >
                     <FiPlus />
@@ -1423,6 +1428,8 @@ export default function NewTenantPage() {
                         index={idx}
                         errors={errors}
                         prefix="staff"
+                        tenantType={type}
+                        defaultCityId={cityId}
                         onRemove={() => setStaff(staff.filter((_, i) => i !== idx))}
                         onChange={(updated) => {
                           const next = [...staff];
@@ -1533,6 +1540,8 @@ function MemberCard({
   index,
   errors,
   prefix,
+  tenantType,
+  defaultCityId,
   onRemove,
   onChange,
 }: {
@@ -1541,6 +1550,8 @@ function MemberCard({
   index: number;
   errors: Record<string, string>;
   prefix: string;
+  tenantType: "barbers" | "barbies";
+  defaultCityId: string;
   onRemove: () => void;
   onChange: (m: MemberState) => void;
 }) {
@@ -1564,7 +1575,17 @@ function MemberCard({
               کاربر موجود
             </button>
             <button
-              onClick={() => onChange({ ...member, type: "new", newUser: { ...EMPTY_NEW_USER } })}
+              onClick={() => onChange({
+                ...member,
+                type: "new",
+                newUser: {
+                  name: member.name || member.newUser?.name || "",
+                  phone: member.newUser?.phone || "",
+                  email: member.newUser?.email || "",
+                  gender: member.newUser?.gender || (tenantType === "barbies" ? "female" : "male"),
+                  cityId: member.newUser?.cityId || defaultCityId || "",
+                }
+              })}
               className={`cursor-pointer px-3 py-1.5 text-[10px] font-bold transition rounded-md ${member.type === "new" ? "bg-white/10 text-white shadow-sm" : "text-white/30 hover:text-white/50"
                 }`}
             >

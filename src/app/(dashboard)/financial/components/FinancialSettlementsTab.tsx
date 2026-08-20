@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useAction, useMutation } from "convex/react";
 import { api } from "@backend/api";
 import {
@@ -33,6 +33,54 @@ export default function FinancialSettlementsTab() {
   const [isSettling, setIsSettling] = useState(false);
   const [isSavingGatewayMode, setIsSavingGatewayMode] = useState(false);
   const [copiedShaba, setCopiedShaba] = useState<string | null>(null);
+  const [copiedAccountId, setCopiedAccountId] = useState<string | null>(null);
+
+  // ── Zibal eBank Connected Accounts State ──
+  const getAccountsAction = useAction(api.settlements.settlements.getZibalEBankAccounts);
+  const [zibalAccounts, setZibalAccounts] = useState<Array<{
+    accountId: string;
+    accountName?: string;
+    accountNumber?: string;
+    accountIban?: string;
+    status?: number;
+  }>>([]);
+  const [activeAccountIdEnv, setActiveAccountIdEnv] = useState<string>("");
+  const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+  const [accountsError, setAccountsError] = useState<string | null>(null);
+
+  const fetchZibalAccounts = async () => {
+    setIsLoadingAccounts(true);
+    setAccountsError(null);
+    try {
+      const res = await getAccountsAction({});
+      if (res.success) {
+        setZibalAccounts(res.accounts || []);
+        setActiveAccountIdEnv(res.activeAccountIdEnv || "");
+      } else {
+        setAccountsError(res.error || "خطا در دریافت حساب‌ها");
+        if (res.activeAccountIdEnv) setActiveAccountIdEnv(res.activeAccountIdEnv);
+      }
+    } catch (err: any) {
+      setAccountsError(err.message || "خطا در اتصال به سرور");
+    } finally {
+      setIsLoadingAccounts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchZibalAccounts();
+  }, []);
+
+  const handleCopyAccountId = (id: string) => {
+    navigator.clipboard.writeText(id);
+    setCopiedAccountId(id);
+    pushToast({
+      type: "info",
+      title: "کپی شد",
+      message: "شناسه حساب (accountId) در حافظه کپی شد.",
+    });
+    setTimeout(() => setCopiedAccountId(null), 2000);
+  };
 
   const handleCopyShaba = (shaba: string) => {
     navigator.clipboard.writeText(shaba);
@@ -317,7 +365,158 @@ export default function FinancialSettlementsTab() {
         </div>
       </div>
 
-      {/* ── 3. Unsettled Salons Table ── */}
+      {/* ── 3. Zibal eBank Accounts Section ── */}
+      <div className="glass-panel rounded-3xl border border-white/8 p-6 lg:p-8 shadow-xl bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/5">
+              <FiCreditCard className="text-2xl" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">
+                  حساب‌های متصل به بانکداری شرکتی زیبال (Zibal eBank Accounts)
+                </h3>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-blue-500/10 border border-blue-500/30 text-blue-300">
+                  {zibalAccounts.length.toLocaleString("fa-IR")} حساب
+                </span>
+              </div>
+              <p className="text-xs text-white/40 mt-1">
+                لیست حساب‌های بانکی مبدا تاییدشده جهت کسر وجه و تسویه خودکار با سالن‌ها
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={fetchZibalAccounts}
+            disabled={isLoadingAccounts}
+            className="cursor-pointer flex items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 px-4 py-2.5 text-xs font-bold text-white transition border border-white/10 disabled:opacity-50"
+          >
+            <FiRefreshCw className={`text-xs ${isLoadingAccounts ? "animate-spin text-blue-400" : ""}`} />
+            بروزرسانی حساب‌ها
+          </button>
+        </div>
+
+        {/* Accounts Content */}
+        <div className="mt-6">
+          {isLoadingAccounts && zibalAccounts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10">
+              <FiRefreshCw className="animate-spin text-2xl text-blue-400 mb-2" />
+              <p className="text-xs text-white/40">در حال دریافت حساب‌های متصل از وب‌سرویس زیبال...</p>
+            </div>
+          ) : accountsError && zibalAccounts.length === 0 ? (
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
+              <div className="flex items-center gap-2">
+                <FiAlertCircle className="text-base text-rose-400 flex-shrink-0" />
+                <span>{accountsError}</span>
+              </div>
+              <button
+                onClick={fetchZibalAccounts}
+                className="underline hover:text-white transition font-bold"
+              >
+                تلاش مجدد
+              </button>
+            </div>
+          ) : zibalAccounts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 rounded-2xl border border-dashed border-white/10 bg-white/[0.01]">
+              <FiCreditCard className="text-3xl text-white/10 mb-2" />
+              <p className="text-xs text-white/30">هیچ حسابی در پنل بانکداری شرکتی زیبال یافت نشد.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {zibalAccounts.map((acc, idx) => {
+                const isConfigured = activeAccountIdEnv && acc.accountId === activeAccountIdEnv;
+                return (
+                  <div
+                    key={acc.accountId || idx}
+                    className={`relative flex flex-col justify-between rounded-2xl border p-5 transition-all bg-white/[0.02] ${
+                      isConfigured
+                        ? "border-blue-500/40 bg-blue-500/[0.05] shadow-lg shadow-blue-500/5 ring-1 ring-blue-500/30"
+                        : "border-white/8 hover:border-white/15"
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            <FiCreditCard size={16} />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold text-white">
+                              {acc.accountName || `حساب بانکی ${idx + 1}`}
+                            </h4>
+                            <span className="text-[11px] text-white/40 font-mono" dir="ltr">
+                              {acc.accountNumber || "شماره حساب نامشخص"}
+                            </span>
+                          </div>
+                        </div>
+                        {isConfigured && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                            حساب فعال در .env
+                          </span>
+                        )}
+                      </div>
+
+                      {/* IBAN */}
+                      {acc.accountIban && (
+                        <div className="mt-3 flex items-center justify-between bg-black/25 rounded-xl p-2.5 border border-white/5">
+                          <span className="text-[11px] text-white/40 font-bold">شماره شبا:</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs text-white/80" dir="ltr">
+                              {acc.accountIban}
+                            </span>
+                            <button
+                              onClick={() => handleCopyShaba(acc.accountIban!)}
+                              className="text-white/40 hover:text-white p-1 transition"
+                              title="کپی شماره شبا"
+                            >
+                              {copiedShaba === acc.accountIban ? (
+                                <FiCheck className="text-emerald-400" size={12} />
+                              ) : (
+                                <FiCopy size={12} />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* accountId */}
+                      <div className="mt-2 flex items-center justify-between bg-black/25 rounded-xl p-2.5 border border-white/5">
+                        <span className="text-[11px] text-white/40 font-bold">شناسه (accountId):</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[11px] text-amber-300/90" dir="ltr">
+                            {acc.accountId}
+                          </span>
+                          <button
+                            onClick={() => handleCopyAccountId(acc.accountId)}
+                            className="text-white/40 hover:text-white p-1 transition"
+                            title="کپی شناسه حساب برای ZIBAL_ACCOUNT_ID"
+                          >
+                            {copiedAccountId === acc.accountId ? (
+                              <FiCheck className="text-emerald-400" size={12} />
+                            ) : (
+                              <FiCopy size={12} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-3 text-[11px]">
+                      <span className="text-white/40">وضعیت حساب:</span>
+                      <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        فعال در بانکداری شرکتی
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 4. Unsettled Salons Table ── */}
       <div className="glass-panel rounded-3xl border border-white/8 p-6 lg:p-8 shadow-xl space-y-6">
         <div className="flex items-center justify-between border-b border-white/5 pb-4">
           <div className="flex items-center gap-3">
@@ -464,7 +663,18 @@ export default function FinancialSettlementsTab() {
                       {s.amount.toLocaleString("fa-IR")}
                     </td>
                     <td className="py-4 px-3 text-center font-mono text-[11px] text-white/40">
-                      {s.zibalCheckoutId || s.zibalTrackId || s.zarinpalPayoutId || "-"}
+                      {s.zibalReceiptUrl ? (
+                        <a
+                          href={s.zibalReceiptUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+                        >
+                          {s.zibalTrackId || s.zibalCheckoutId || "مشاهده رسید"}
+                        </a>
+                      ) : (
+                        s.zibalCheckoutId || s.zibalTrackId || s.zarinpalPayoutId || "-"
+                      )}
                     </td>
                     <td className="py-4 pl-2 text-center">
                       <span
