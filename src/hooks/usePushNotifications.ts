@@ -10,9 +10,14 @@ import {
 } from "@/lib/pushNotifications";
 import toast from "react-hot-toast";
 
+export const FALLBACK_VAPID_PUBLIC_KEY =
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+  "BIrWFvf24nDE_FFIzIFYNiZeWBml_Ts8ia-598FK_ZK76yI4VHwFlftzueSGRmo3TXvd0qzcGVYGCLOmnrLJuBU";
+
 export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [isLocalSubscribed, setIsLocalSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
@@ -29,26 +34,30 @@ export function usePushNotifications() {
     if (
       typeof window !== "undefined" &&
       "serviceWorker" in navigator &&
-      "PushManager" in window &&
       "Notification" in window
     ) {
       setIsSupported(true);
       setPermission(Notification.permission);
 
-      registerServiceWorker().then((reg) => {
-        if (reg) setSwRegistration(reg);
-      });
+      if ("PushManager" in window) {
+        registerServiceWorker().then(async (reg) => {
+          if (reg) {
+            setSwRegistration(reg);
+            try {
+              const sub = await reg.pushManager.getSubscription();
+              setIsLocalSubscribed(!!sub);
+            } catch (e) {
+              console.warn("[CP Push] Error checking local push subscription:", e);
+            }
+          }
+        });
+      }
     }
   }, []);
 
   const subscribe = useCallback(async () => {
     if (!isSupported) {
       toast.error("مرورگر شما از اعلان‌های سیستمی پشتیبانی نمی‌کند.");
-      return false;
-    }
-
-    if (!vapidPublicKey) {
-      toast.error("کلید ارتباط با سرور اعلان دریافت نشد.");
       return false;
     }
 
@@ -78,7 +87,8 @@ export function usePushNotifications() {
         return false;
       }
 
-      const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+      const activeKey = vapidPublicKey || FALLBACK_VAPID_PUBLIC_KEY;
+      const convertedKey = urlBase64ToUint8Array(activeKey);
       let sub = await reg.pushManager.getSubscription();
 
       if (!sub) {
@@ -105,6 +115,7 @@ export function usePushNotifications() {
         device: navigator.userAgent.includes("Mobile") ? "گوشی موبایل" : "سیستم دسکتاپ",
       });
 
+      setIsLocalSubscribed(true);
       playChimeSound();
       toast.success("اعلان‌های مرورگر با موفقیت فعال شدند!");
       setIsLoading(false);
@@ -127,6 +138,7 @@ export function usePushNotifications() {
         await sub.unsubscribe();
         await removeSubscription({ endpoint: sub.endpoint });
       }
+      setIsLocalSubscribed(false);
       toast.success("اعلان‌های مرورگر غیرفعال شدند.");
       setIsLoading(false);
       return true;
@@ -165,7 +177,7 @@ export function usePushNotifications() {
     try {
       playChimeSound();
       await sendTestPushAction({
-        title: "🔔 بست‌تایم CP: اعلان آزمایشی",
+        title: "🔔 بستی CP: اعلان آزمایشی",
         message: "اعلان‌های پنل مدیریت با موفقیت متصل هستند!",
       });
       toast.success("اعلان آزمایشی ارسال شد!");
@@ -180,7 +192,8 @@ export function usePushNotifications() {
   return {
     isSupported,
     permission,
-    isSubscribed: subscriptionStatus?.isSubscribed ?? false,
+    isSubscribed: isLocalSubscribed || (subscriptionStatus?.isSubscribed ?? false),
+    isLocalSubscribed,
     isLoading,
     preferences: preferences ?? {
       pushEnabled: true,
@@ -195,6 +208,7 @@ export function usePushNotifications() {
       },
     },
     subscribe,
+    requestPermission: subscribe,
     unsubscribe,
     updatePreferences,
     sendTest,

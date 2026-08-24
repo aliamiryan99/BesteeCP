@@ -623,22 +623,34 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Status banner */}
-        <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
-          <span className="text-white/50">وضعیت دسترسی در این مرورگر:</span>
-          <span className={`font-black px-2.5 py-1 rounded-xl ${
-            pushNotif.permission === "granted"
-              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
-              : pushNotif.permission === "denied"
-              ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
-              : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-          }`}>
-            {pushNotif.permission === "granted"
-              ? "دسترسی تایید شده (فعال)"
-              : pushNotif.permission === "denied"
-              ? "مسدود شده توسط مرورگر"
-              : "درخواست نشده"}
-          </span>
+        {/* Status banner with dedicated permission request button */}
+        <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-white/50">وضعیت دسترسی در این مرورگر:</span>
+            <span className={`font-black px-2.5 py-1 rounded-xl ${
+              pushNotif.permission === "granted"
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                : pushNotif.permission === "denied"
+                ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+                : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+            }`}>
+              {pushNotif.permission === "granted"
+                ? "دسترسی تایید شده (فعال)"
+                : pushNotif.permission === "denied"
+                ? "مسدود شده توسط مرورگر"
+                : "درخواست نشده"}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={pushNotif.subscribe}
+            disabled={pushNotif.isLoading}
+            className="px-3.5 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-xs shadow-sm cursor-pointer transition disabled:opacity-50 flex items-center gap-1.5"
+          >
+            <FiBell size={13} />
+            <span>درخواست مجوز اعلان مرورگر</span>
+          </button>
         </div>
 
         {/* Toggles */}
