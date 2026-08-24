@@ -18,8 +18,11 @@ import {
   FiChevronRight,
   FiMessageSquare,
   FiMail,
+  FiSmartphone,
 } from "react-icons/fi";
 import Link from "next/link";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { useNotificationAlerts } from "@/hooks/useNotificationAlerts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -181,6 +184,11 @@ function EventRow({
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Real-time audio chime and background desktop notification
+  useNotificationAlerts();
+  const { isSupported, permission, isSubscribed, subscribe, isLoading } =
+    usePushNotifications();
 
   const totalCount = useQuery(api.notifications.notifications.getTotalUnreadCount);
   const notifData = useQuery(
@@ -445,10 +453,32 @@ export function NotificationBell() {
             </div>
 
             {/* Footer */}
-            <div className="border-t border-white/8 px-5 py-3">
-              <p className="text-center text-[10px] text-white/20">
-                اعلان‌ها بلادرنگ به‌روزرسانی می‌شوند
-              </p>
+            <div className="border-t border-white/8 px-4 py-2.5 flex items-center justify-between text-[11px] bg-white/[0.02]">
+              {isSubscribed ? (
+                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>اعلان مرورگر: فعال</span>
+                </div>
+              ) : isSupported ? (
+                <button
+                  onClick={subscribe}
+                  disabled={isLoading}
+                  className="flex items-center gap-1 text-orange-400 hover:text-orange-300 font-bold cursor-pointer transition-colors"
+                >
+                  <FiSmartphone size={13} />
+                  <span>{isLoading ? "در حال فعال‌سازی..." : "فعال‌سازی اعلان مرورگر"}</span>
+                </button>
+              ) : (
+                <span className="text-white/30 text-[10px]">اعلان مرورگر پشتیبانی نمی‌شود</span>
+              )}
+
+              <Link
+                href="/profile"
+                onClick={() => setOpen(false)}
+                className="text-white/40 hover:text-white transition-colors text-[10px]"
+              >
+                تنظیمات
+              </Link>
             </div>
           </motion.div>
         )}

@@ -36,6 +36,8 @@ import type * as http from "../http.js";
 import type * as myFunctions from "../myFunctions.js";
 import type * as notifications_dashboardNotifications from "../notifications/dashboardNotifications.js";
 import type * as notifications_notifications from "../notifications/notifications.js";
+import type * as notifications_push from "../notifications/push.js";
+import type * as notifications_pushActions from "../notifications/pushActions.js";
 import type * as orders_cart from "../orders/cart.js";
 import type * as orders_orders from "../orders/orders.js";
 import type * as orders_payments from "../orders/payments.js";
@@ -113,6 +115,8 @@ declare const fullApi: ApiFromModules<{
   myFunctions: typeof myFunctions;
   "notifications/dashboardNotifications": typeof notifications_dashboardNotifications;
   "notifications/notifications": typeof notifications_notifications;
+  "notifications/push": typeof notifications_push;
+  "notifications/pushActions": typeof notifications_pushActions;
   "orders/cart": typeof orders_cart;
   "orders/orders": typeof orders_orders;
   "orders/payments": typeof orders_payments;

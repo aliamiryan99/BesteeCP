@@ -24,7 +24,12 @@ import {
   FiLoader,
   FiEdit3,
   FiRefreshCw,
+  FiBell,
+  FiVolume2,
+  FiSmartphone,
+  FiSend,
 } from "react-icons/fi";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 import { sanitizeError } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -51,6 +56,7 @@ export default function ProfilePage() {
   const updateProfile = useMutation(api.users.auth.updateProfile);
   const changePassword = useMutation(api.users.auth.changePassword);
   const generateUploadUrl = useMutation(api.uploads.upload.generateUploadUrl);
+  const pushNotif = usePushNotifications();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -561,6 +567,117 @@ export default function ProfilePage() {
           <StatusBadge label="نقش" value={translateRole(user.role)} color="orange" />
           <StatusBadge label="وضعیت" value={user.active ? "فعال" : "غیرفعال"} color={user.active ? "emerald" : "red"} />
           <StatusBadge label="مسدود" value={user.ban ? "بله" : "خیر"} color={user.ban ? "red" : "emerald"} />
+        </div>
+      </motion.section>
+
+      {/* ── Notification & Web Push Settings ── */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.45 }}
+        className="profile-card rounded-3xl border border-white/10 bg-gradient-to-br from-slate-800/70 via-slate-900/80 to-slate-950/90 p-6 space-y-6"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 border border-orange-500/20">
+              <FiSmartphone className="text-lg text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white leading-tight">اعلان‌های مرورگر و گوشی (Web Push)</h2>
+              <p className="text-xs text-white/40 mt-1">دریافت سریع پیام‌های پشتیبانی، درخواست‌های سالن و رویدادهای مهم</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {pushNotif.isSubscribed ? (
+              <button
+                type="button"
+                onClick={pushNotif.unsubscribe}
+                disabled={pushNotif.isLoading}
+                className="px-4 py-2 rounded-2xl bg-rose-500/10 hover:bg-rose-500/15 border border-rose-500/20 text-rose-400 font-bold text-xs cursor-pointer transition disabled:opacity-50"
+              >
+                {pushNotif.isLoading ? "در حال پردازش..." : "غیرفعال‌سازی"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={pushNotif.subscribe}
+                disabled={pushNotif.isLoading}
+                className="px-4 py-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white font-bold text-xs shadow-lg shadow-orange-500/20 cursor-pointer transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <FiBell size={14} />
+                <span>{pushNotif.isLoading ? "در حال اتصال..." : "فعال‌سازی اعلان‌ها"}</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={pushNotif.sendTest}
+              disabled={pushNotif.isLoading}
+              className="px-3 py-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white font-bold text-xs cursor-pointer transition disabled:opacity-50 flex items-center gap-1.5"
+              title="ارسال تست"
+            >
+              <FiSend size={13} />
+              <span className="hidden sm:inline">تست اعلان</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status banner */}
+        <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between text-xs">
+          <span className="text-white/50">وضعیت دسترسی در این مرورگر:</span>
+          <span className={`font-black px-2.5 py-1 rounded-xl ${
+            pushNotif.permission === "granted"
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+              : pushNotif.permission === "denied"
+              ? "bg-rose-500/15 text-rose-400 border border-rose-500/20"
+              : "bg-amber-500/15 text-amber-400 border border-amber-500/20"
+          }`}>
+            {pushNotif.permission === "granted"
+              ? "دسترسی تایید شده (فعال)"
+              : pushNotif.permission === "denied"
+              ? "مسدود شده توسط مرورگر"
+              : "درخواست نشده"}
+          </span>
+        </div>
+
+        {/* Toggles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div>
+              <span className="font-bold text-xs block text-white">پخش صدای زنگ اعلان</span>
+              <span className="text-[10px] text-white/40 mt-0.5 block">صدای کریستالی هنگام رویداد جدید</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={pushNotif.preferences.soundEnabled}
+              onChange={() =>
+                pushNotif.updatePreferences({
+                  ...pushNotif.preferences,
+                  soundEnabled: !pushNotif.preferences.soundEnabled,
+                })
+              }
+              className="h-5 w-5 rounded-lg border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/10">
+            <div>
+              <span className="font-bold text-xs block text-white">اعلان‌های سیستمی</span>
+              <span className="text-[10px] text-white/40 mt-0.5 block">پاپ‌آپ اعلان روی صفحه دسکتاپ/گوشی</span>
+            </div>
+            <input
+              type="checkbox"
+              checked={pushNotif.preferences.pushEnabled}
+              onChange={() =>
+                pushNotif.updatePreferences({
+                  ...pushNotif.preferences,
+                  pushEnabled: !pushNotif.preferences.pushEnabled,
+                })
+              }
+              className="h-5 w-5 rounded-lg border-white/20 bg-white/5 text-orange-500 focus:ring-orange-500/20 cursor-pointer accent-orange-500"
+            />
+          </div>
         </div>
       </motion.section>
 
