@@ -1,0 +1,22 @@
+{
+  "name": "پنل مدیریت بستی CP",
+  "short_name": "بستی CP",
+  "description": "سامانه مدیریت مرکزی و نظارت بر پلتفرم بستی",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#f97316",
+  "orientation": "portrait",
+  "dir": "rtl",
+  "lang": "fa-IR",
+  "gcm_sender_id": "103953800507",
+  "icons": [
+    {
+      "src": "/BestieeMiniLogoBlue.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

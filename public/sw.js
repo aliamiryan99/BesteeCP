@@ -19,8 +19,11 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       icon: data.icon || "/BestieeMiniLogoBlue.png",
       badge: data.badge || "/BestieeMiniLogoBlue.png",
-      tag: data.tag || "bestiee-cp-notification",
+      tag: data.tag || `bestiee-cp-${Date.now()}`,
       renotify: true,
+      requireInteraction: false,
+      silent: false,
+      timestamp: data.timestamp || Date.now(),
       vibrate: [200, 100, 200],
       dir: "rtl",
       lang: "fa-IR",
@@ -43,7 +46,9 @@ self.addEventListener("push", (event) => {
       self.registration.showNotification("اعلان جدید پنل مدیریت بستی", {
         body: text,
         icon: "/BestieeMiniLogoBlue.png",
+        badge: "/BestieeMiniLogoBlue.png",
         dir: "rtl",
+        lang: "fa-IR",
         data: { url: "/" },
       })
     );

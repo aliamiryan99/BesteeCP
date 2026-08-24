@@ -58,6 +58,34 @@ export default function ProfilePage() {
   const generateUploadUrl = useMutation(api.uploads.upload.generateUploadUrl);
   const pushNotif = usePushNotifications();
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+
+    if (typeof window !== "undefined" && window.matchMedia("(display-mode: standalone)").matches) {
+      setIsStandalone(true);
+    }
+
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === "accepted") {
+        setDeferredPrompt(null);
+        setIsStandalone(true);
+      }
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -652,6 +680,33 @@ export default function ProfilePage() {
             <span>درخواست مجوز اعلان مرورگر</span>
           </button>
         </div>
+
+        {/* PWA App Install Banner */}
+        {!isStandalone && (
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-orange-500/10 border border-orange-500/20 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400">
+                <FiSmartphone size={16} />
+              </div>
+              <div>
+                <span className="font-bold text-xs block text-white">
+                  نصب پنل روی گوشی (PWA)
+                </span>
+                <span className="text-[10px] text-white/40 mt-0.5 block">
+                  دریافت بدون قطعی اعلان‌ها حتی در زمان بسته بودن مرورگر
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleInstallPWA}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 active:scale-95 text-white font-bold text-xs shadow-sm cursor-pointer transition flex items-center gap-1.5"
+            >
+              <span>افزودن به صفحه اصلی</span>
+            </button>
+          </div>
+        )}
 
         {/* Toggles */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
