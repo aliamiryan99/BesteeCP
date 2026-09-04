@@ -19,6 +19,11 @@ import {
   FiX,
   FiServer,
   FiActivity,
+  FiUploadCloud,
+  FiEye,
+  FiImage,
+  FiArrowUpRight,
+  FiSliders,
 } from "react-icons/fi";
 import { useToastStore } from "@/store/toastStore";
 
@@ -28,12 +33,30 @@ export default function FinancialSettlementsTab() {
   const settings = useQuery(api.ai.settings.get);
   const updateSettings = useMutation(api.ai.settings.update);
   const runDailySettlement = useAction(api.settlements.settlements.runDailySettlement);
+  const completeManualSettlement = useMutation(api.settlements.settlements.completeManualSettlement);
+  const generateUploadUrl = useMutation(api.uploads.upload.generateUploadUrl);
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
   const [isSavingGatewayMode, setIsSavingGatewayMode] = useState(false);
   const [copiedShaba, setCopiedShaba] = useState<string | null>(null);
   const [copiedAccountId, setCopiedAccountId] = useState<string | null>(null);
+
+  // ── Manual Settlement Completion Modal State ──
+  const [settleTarget, setSettleTarget] = useState<any | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [adminNote, setAdminNote] = useState("");
+  const [isSubmittingSettlement, setIsSubmittingSettlement] = useState(false);
+
+  // ── Minimum Threshold Configuration State ──
+  const [minThresholdInput, setMinThresholdInput] = useState<string>("");
+  const [isSavingThreshold, setIsSavingThreshold] = useState(false);
+
+  // ── Receipt Preview Modal State ──
+  const [activePreviewReceiptUrl, setActivePreviewReceiptUrl] = useState<string | null>(null);
+  const [activePreviewTracking, setActivePreviewTracking] = useState<string | null>(null);
 
   // ── Zibal eBank Connected Accounts State ──
   const getAccountsAction = useAction(api.settlements.settlements.getZibalEBankAccounts);
@@ -142,6 +165,138 @@ export default function FinancialSettlementsTab() {
       });
     } finally {
       setIsSettling(false);
+    }
+  };
+
+  // Sync minimum threshold input from settings
+  useEffect(() => {
+    if (settings?.minSettlementAmountTomans !== undefined) {
+      setMinThresholdInput(String(settings.minSettlementAmountTomans));
+    } else if (overview?.minSettlementAmountTomans !== undefined) {
+      setMinThresholdInput(String(overview.minSettlementAmountTomans));
+    }
+  }, [settings?.minSettlementAmountTomans, overview?.minSettlementAmountTomans]);
+
+  const handleSaveMinThreshold = async () => {
+    const val = Number(minThresholdInput);
+    if (isNaN(val) || val < 0) {
+      pushToast({
+        type: "error",
+        title: "مبلغ نامعتبر",
+        message: "لطفا یک مبلغ عددی معتبر به تومان وارد کنید.",
+      });
+      return;
+    }
+    setIsSavingThreshold(true);
+    try {
+      await updateSettings({
+        minSettlementAmountTomans: val,
+      });
+      pushToast({
+        type: "success",
+        title: "ذخیره شد",
+        message: `حداقل مبلغ مجاز جهت درخواست تسویه سالن‌ها به ${val.toLocaleString("fa-IR")} تومان تغییر یافت.`,
+      });
+    } catch (err: any) {
+      console.error("Failed to save threshold:", err);
+      pushToast({
+        type: "error",
+        title: "خطا در ذخیره",
+        message: err.message || "مشکلی در ذخیره تنظیمات رخ داد.",
+      });
+    } finally {
+      setIsSavingThreshold(false);
+    }
+  };
+
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setReceiptFile(file);
+      const reader = new FileReader();
+      reader.onload = () => {
+        setReceiptPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOpenSettleModal = (request: any) => {
+    setSettleTarget(request);
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setTrackingNumber("");
+    setAdminNote("");
+  };
+
+  const handleExecuteManualSettlement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settleTarget) return;
+
+    if (!receiptFile) {
+      pushToast({
+        type: "error",
+        title: "تصویر فیش الزامی است",
+        message: "لطفاً تصویر فیش واریز بانکی را بارگذاری فرمایید.",
+      });
+      return;
+    }
+
+    if (!trackingNumber.trim()) {
+      pushToast({
+        type: "error",
+        title: "کد پیگیری الزامی است",
+        message: "لطفاً شماره پیگیری بانکی یا شناسه تراکنش را وارد فرمایید.",
+      });
+      return;
+    }
+
+    setIsSubmittingSettlement(true);
+    try {
+      // 1. Generate signed upload URL from Convex
+      const uploadUrl = await generateUploadUrl();
+
+      // 2. Upload file to Convex storage
+      const uploadRes = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": receiptFile.type || "image/jpeg" },
+        body: receiptFile,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("خطا در بارگذاری تصویر فیش در فضای ذخیره‌سازی.");
+      }
+
+      const { storageId } = await uploadRes.json();
+
+      // 3. Mark settlement completed
+      await completeManualSettlement({
+        settlementId: settleTarget._id,
+        receiptStorageId: storageId,
+        referenceId: trackingNumber.trim(),
+        note: adminNote.trim() || undefined,
+      });
+
+      pushToast({
+        type: "success",
+        title: "تسویه با موفقیت تایید و ثبت شد",
+        message: `تسویه حساب سالن «${settleTarget.tenantName}» به مبلغ ${settleTarget.amount.toLocaleString("fa-IR")} تومان با موفقیت ثبت گردید.`,
+      });
+
+      setSettleTarget(null);
+      setReceiptFile(null);
+      setReceiptPreview(null);
+      setTrackingNumber("");
+      setAdminNote("");
+    } catch (err: any) {
+      console.error("Failed to complete settlement:", err);
+      pushToast({
+        type: "error",
+        title: "خطا در تکمیل تسویه",
+        message: err.message || "مشکلی در ذخیره فیش و تایید تسویه رخ داد.",
+      });
+    } finally {
+      setIsSubmittingSettlement(false);
     }
   };
 
@@ -365,7 +520,147 @@ export default function FinancialSettlementsTab() {
         </div>
       </div>
 
-      {/* ── 3. Zibal eBank Accounts Section ── */}
+      {/* ── 3. Threshold Configuration Card ── */}
+      <div className="glass-panel rounded-3xl border border-white/8 p-6 shadow-xl bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+            <FiSliders className="text-xl" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">
+              حداقل مبلغ مجاز جهت درخواست تسویه توسط سالن‌ها
+            </h3>
+            <p className="text-xs text-white/40 mt-0.5">
+              تنظیم کف موجودی لازم در داشبورد سالن‌داران جهت فعال شدن دکمه «درخواست تسویه» (به تومان)
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="relative">
+            <input
+              type="number"
+              step={100000}
+              min={100000}
+              value={minThresholdInput}
+              onChange={(e) => setMinThresholdInput(e.target.value)}
+              className="w-44 px-3.5 py-2.5 rounded-xl border border-white/10 bg-black/30 text-white font-mono font-bold text-xs focus:outline-none focus:ring-2 focus:ring-amber-500/30 text-left pl-14"
+              placeholder="1000000"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] text-white/40 font-bold">
+              تومان
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveMinThreshold}
+            disabled={isSavingThreshold}
+            className="cursor-pointer px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {isSavingThreshold ? <FiRefreshCw className="animate-spin" /> : <FiCheck />}
+            <span>ذخیره حد نصاب</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 4. Pending Tenant Settlement Requests ── */}
+      <div className="glass-panel rounded-3xl border border-amber-500/20 p-6 lg:p-8 shadow-xl bg-gradient-to-br from-amber-500/5 via-slate-900/90 to-slate-900/90 space-y-6">
+        <div className="flex items-center justify-between border-b border-white/5 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <FiClock className="text-xl" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white">
+                  درخواست‌های تسویه سالن‌ها در انتظار اقدام
+                </h3>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-amber-500/10 border border-amber-500/30 text-amber-300">
+                  {(overview?.pendingRequests?.length || 0).toLocaleString("fa-IR")} درخواست
+                </span>
+              </div>
+              <p className="text-xs text-white/40 mt-0.5">
+                لیست درخواست‌های تسویه ارسال شده توسط مدیران سالن‌ها جهت واریز وجه و بارگذاری فیش بانکی
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {overview?.pendingRequests && overview.pendingRequests.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs font-bold text-white/40">
+                  <th className="pb-3 pr-2">تاریخ درخواست</th>
+                  <th className="pb-3 px-3">نام سالن</th>
+                  <th className="pb-3 px-3">شماره شبا مقصد</th>
+                  <th className="pb-3 px-3">صاحب حساب</th>
+                  <th className="pb-3 px-3 text-center">نوبت‌ها</th>
+                  <th className="pb-3 px-3 text-left">مبلغ تسویه (تومان)</th>
+                  <th className="pb-3 pl-2 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {overview.pendingRequests.map((req: any) => (
+                  <tr key={req._id} className="hover:bg-white/[0.02] transition">
+                    <td className="py-4 pr-2 text-xs text-white/60 font-mono">
+                      {new Date(req.requestedAt || req.createdAt).toLocaleDateString("fa-IR")}
+                    </td>
+                    <td className="py-4 px-3 font-bold text-white">{req.tenantName}</td>
+                    <td className="py-4 px-3">
+                      <div className="flex items-center gap-2 font-mono text-xs text-amber-300">
+                        <span dir="ltr">{req.shabaNumber}</span>
+                        <button
+                          onClick={() => handleCopyShaba(req.shabaNumber)}
+                          className="text-white/40 hover:text-white transition p-1 cursor-pointer"
+                          title="کپی شبا"
+                        >
+                          {copiedShaba === req.shabaNumber ? (
+                            <FiCheck className="text-emerald-400 text-xs" />
+                          ) : (
+                            <FiCopy className="text-xs" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="py-4 px-3 text-xs text-white/70">
+                      {req.accountHolderName || "—"}
+                    </td>
+                    <td className="py-4 px-3 text-center text-xs font-bold text-white/60 font-mono">
+                      {(req.bookingCount || req.bookingPaymentIds?.length || 0).toLocaleString("fa-IR")}
+                    </td>
+                    <td className="py-4 px-3 text-left font-black text-amber-400 font-mono text-base">
+                      {req.amount.toLocaleString("fa-IR")}
+                    </td>
+                    <td className="py-4 pl-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSettleModal(req)}
+                        className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 text-xs font-black shadow-md shadow-emerald-500/20 transition active:scale-95"
+                      >
+                        <FiUploadCloud size={14} />
+                        <span>ثبت تسویه و بارگذاری فیش</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2.5">
+              <FiCheckCircle className="text-xl" />
+            </div>
+            <p className="text-xs font-bold text-white">هیچ درخواست تسویه‌ای در صف انتظار نیست</p>
+            <p className="text-[11px] text-white/40 mt-0.5">
+              تمامی درخواست‌های ثبت‌شده توسط سالن‌ها تسویه گردیده‌اند.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── 5. Zibal eBank Accounts Section ── */}
       <div className="glass-panel rounded-3xl border border-white/8 p-6 lg:p-8 shadow-xl bg-gradient-to-br from-slate-900/90 via-slate-800/80 to-slate-900/90 relative overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-5">
           <div className="flex items-center gap-3.5">
@@ -636,7 +931,8 @@ export default function FinancialSettlementsTab() {
                   <th className="pb-3 px-3">شماره شبا مقصد</th>
                   <th className="pb-3 px-3 text-center">تعداد نوبت</th>
                   <th className="pb-3 px-3 text-left">مبلغ تسویه (تومان)</th>
-                  <th className="pb-3 px-3 text-center">شناسه پیگیری زیبال</th>
+                  <th className="pb-3 px-3 text-center">شناسه پیگیری بانکی</th>
+                  <th className="pb-3 px-3 text-center">فیش واریزی</th>
                   <th className="pb-3 pl-2 text-center">وضعیت</th>
                 </tr>
               </thead>
@@ -644,7 +940,7 @@ export default function FinancialSettlementsTab() {
                 {overview.recentSettlements.map((s: any) => (
                   <tr key={s._id} className="hover:bg-white/[0.02] transition">
                     <td className="py-4 pr-2 text-xs text-white/60 font-mono">
-                      {new Date(s.createdAt).toLocaleDateString("fa-IR", {
+                      {new Date(s.settledAt || s.createdAt).toLocaleDateString("fa-IR", {
                         year: "numeric",
                         month: "2-digit",
                         day: "2-digit",
@@ -662,18 +958,33 @@ export default function FinancialSettlementsTab() {
                     <td className="py-4 px-3 text-left font-black text-emerald-400">
                       {s.amount.toLocaleString("fa-IR")}
                     </td>
-                    <td className="py-4 px-3 text-center font-mono text-[11px] text-white/40">
-                      {s.zibalReceiptUrl ? (
+                    <td className="py-4 px-3 text-center font-mono text-[11px] text-white/70">
+                      {s.referenceId || s.zibalTrackId || s.zibalCheckoutId || "—"}
+                    </td>
+                    <td className="py-4 px-3 text-center">
+                      {s.receiptUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActivePreviewReceiptUrl(s.receiptUrl);
+                            setActivePreviewTracking(s.referenceId || s.zibalTrackId || null);
+                          }}
+                          className="cursor-pointer inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/20 transition"
+                        >
+                          <FiEye size={13} />
+                          <span>مشاهده فیش</span>
+                        </button>
+                      ) : s.zibalReceiptUrl ? (
                         <a
                           href={s.zibalReceiptUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
+                          className="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 underline underline-offset-2 text-xs"
                         >
-                          {s.zibalTrackId || s.zibalCheckoutId || "مشاهده رسید"}
+                          مشاهده رسید
                         </a>
                       ) : (
-                        s.zibalCheckoutId || s.zibalTrackId || s.zarinpalPayoutId || "-"
+                        <span className="text-white/30 text-xs">—</span>
                       )}
                     </td>
                     <td className="py-4 pl-2 text-center">
@@ -779,6 +1090,235 @@ export default function FinancialSettlementsTab() {
                   <FiCheckCircle className="text-base" />
                 )}
                 <span>تایید و ارسال دستور تسویه</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 6. Manual Settlement Completion Modal ── */}
+      {settleTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 p-6 sm:p-7 shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setSettleTarget(null);
+                setReceiptFile(null);
+                setReceiptPreview(null);
+              }}
+              className="absolute top-6 left-6 text-white/40 hover:text-white transition p-1 cursor-pointer"
+            >
+              <FiX className="text-xl" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                <FiUploadCloud className="text-2xl" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">
+                  ثبت تسویه و بارگذاری فیش بانکی
+                </h3>
+                <p className="text-xs text-white/40 mt-0.5">
+                  واریز وجه به حساب سالن و ثبت مستندات پرداخت در سامانه
+                </p>
+              </div>
+            </div>
+
+            {/* Target Tenant & Amount Summary */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-2.5 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="text-white/50">نام سالن:</span>
+                <span className="font-bold text-white text-sm">{settleTarget.tenantName}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                <span className="text-white/50">مبلغ قابل واریز:</span>
+                <span className="font-mono font-black text-emerald-400 text-base">
+                  {settleTarget.amount.toLocaleString("fa-IR")} تومان
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                <span className="text-white/50">شماره شبا مقصد:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-amber-300 tracking-wider" dir="ltr">
+                    {settleTarget.shabaNumber}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyShaba(settleTarget.shabaNumber)}
+                    className="text-white/40 hover:text-white p-1"
+                    title="کپی شبا"
+                  >
+                    {copiedShaba === settleTarget.shabaNumber ? (
+                      <FiCheck className="text-emerald-400" size={12} />
+                    ) : (
+                      <FiCopy size={12} />
+                    )}
+                  </button>
+                </div>
+              </div>
+              {settleTarget.accountHolderName && (
+                <div className="flex justify-between items-center border-t border-white/5 pt-2">
+                  <span className="text-white/50">نام صاحب حساب:</span>
+                  <span className="font-bold text-white">{settleTarget.accountHolderName}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleExecuteManualSettlement} className="space-y-4">
+              {/* Receipt File Upload */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-white">
+                  تصویر فیش واریز / انتقال وجه <span className="text-rose-400">*</span>:
+                </label>
+                <div className="relative border-2 border-dashed border-white/15 hover:border-emerald-500/40 rounded-2xl p-4 text-center transition bg-white/[0.01]">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    required
+                    onChange={handleReceiptFileChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  {receiptPreview ? (
+                    <div className="space-y-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={receiptPreview}
+                        alt="پیش‌نمایش فیش"
+                        className="h-32 mx-auto rounded-xl object-contain border border-white/10"
+                      />
+                      <span className="text-[11px] text-emerald-400 font-bold block">
+                        تصویر انتخاب شد (جهت تغییر کلیک کنید)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="py-3 flex flex-col items-center justify-center space-y-1.5">
+                      <FiImage className="text-3xl text-white/30" />
+                      <span className="text-xs font-bold text-white/70">
+                        کلیک یا کشیدن تصویر فیش واریز به این بخش
+                      </span>
+                      <span className="text-[10px] text-white/40">
+                        فرمت‌های مجاز: JPG, PNG, WEBP (حداکثر ۵ مگابایت)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Bank Tracking / Reference ID */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-white">
+                  کد رهگیری / شماره پیگیری بانکی <span className="text-rose-400">*</span>:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: 9876543210 یا TRK-12345"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-black/30 text-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-left"
+                />
+              </div>
+
+              {/* Admin Note */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-white/70">
+                  توضیحات و یادداشت مدیر (اختیاری):
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: واریز از طریق سامانه پایا بانک ملت"
+                  value={adminNote}
+                  onChange={(e) => setAdminNote(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-white/10 bg-black/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-right"
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettleTarget(null);
+                    setReceiptFile(null);
+                    setReceiptPreview(null);
+                  }}
+                  disabled={isSubmittingSettlement}
+                  className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-white/60 hover:bg-white/5 transition cursor-pointer"
+                >
+                  انصراف
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSettlement}
+                  className="cursor-pointer flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 px-5 py-2.5 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition disabled:opacity-50"
+                >
+                  {isSubmittingSettlement ? (
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
+                  ) : (
+                    <FiCheckCircle className="text-base" />
+                  )}
+                  <span>تکمیل و ثبت تسویه سالن</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── 7. Receipt Preview Modal ── */}
+      {activePreviewReceiptUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl space-y-4 relative">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div>
+                <h4 className="text-sm font-bold text-white">تصویر فیش واریز تسویه</h4>
+                {activePreviewTracking && (
+                  <p className="text-[11px] text-white/50 font-mono mt-0.5">
+                    کد رهگیری: {activePreviewTracking}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setActivePreviewReceiptUrl(null);
+                  setActivePreviewTracking(null);
+                }}
+                className="text-white/40 hover:text-white transition p-1 cursor-pointer"
+              >
+                <FiX className="text-xl" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/20 flex items-center justify-center max-h-[70vh]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={activePreviewReceiptUrl}
+                alt="فیش واریز تسویه"
+                className="w-full h-auto max-h-[65vh] object-contain"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <a
+                href={activePreviewReceiptUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+              >
+                <span>باز کردن در پنجره جدید</span>
+                <FiArrowUpRight size={13} />
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  setActivePreviewReceiptUrl(null);
+                  setActivePreviewTracking(null);
+                }}
+                className="cursor-pointer px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition"
+              >
+                بستن
               </button>
             </div>
           </div>
