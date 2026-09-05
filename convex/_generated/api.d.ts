@@ -12,6 +12,7 @@ import type * as ai_agent from "../ai/agent.js";
 import type * as ai_ai from "../ai/ai.js";
 import type * as ai_archiveResults from "../ai/archiveResults.js";
 import type * as ai_catalog from "../ai/catalog.js";
+import type * as ai_characterSheets from "../ai/characterSheets.js";
 import type * as ai_chat from "../ai/chat.js";
 import type * as ai_credit_plans from "../ai/credit_plans.js";
 import type * as ai_helpDocs from "../ai/helpDocs.js";
@@ -91,6 +92,7 @@ declare const fullApi: ApiFromModules<{
   "ai/ai": typeof ai_ai;
   "ai/archiveResults": typeof ai_archiveResults;
   "ai/catalog": typeof ai_catalog;
+  "ai/characterSheets": typeof ai_characterSheets;
   "ai/chat": typeof ai_chat;
   "ai/credit_plans": typeof ai_credit_plans;
   "ai/helpDocs": typeof ai_helpDocs;
