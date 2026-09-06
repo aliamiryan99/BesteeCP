@@ -16,6 +16,10 @@ import {
   FiRefreshCw,
   FiChevronLeft,
   FiChevronRight,
+  FiCopy,
+  FiFileText,
+  FiTerminal,
+  FiActivity,
 } from "react-icons/fi";
 
 const statusConfig = {
@@ -67,6 +71,15 @@ interface AdminAiTask {
   resultUrls?: string[];
   imageInputs: string[];
   errorMessage?: string;
+  feasibilityAnalysis?: {
+    status: "processing" | "completed" | "failed";
+    text?: string;
+    prompt?: string;
+    requestedAt: number;
+    completedAt?: number;
+    creditsUsed?: number;
+    errorMessage?: string;
+  };
 }
 
 function parsePromptMeta(raw: unknown): TaskPromptMetaV2 | null {
@@ -157,6 +170,74 @@ function taskTypeLabel(type: unknown) {
   return type === "barbies" ? "زیبایی بانوان" : "آرایشگری مردانه";
 }
 
+interface FeasibilityVerdictInfo {
+  type: "ready" | "needs_growth" | "not_possible";
+  title: string;
+  badgeText: string;
+  badgeBg: string;
+  badgeBorder: string;
+  badgeTextCol: string;
+}
+
+function detectFeasibilityVerdict(rawText?: string): FeasibilityVerdictInfo | null {
+  if (!rawText) return null;
+  const normalized = rawText.replace(/\u200c/g, " ");
+
+  if (
+    normalized.includes("با این اندازه مو قابل اجرا نیست ولی") ||
+    normalized.includes("بلندتر شدن مو") ||
+    normalized.includes("گذر زمان") ||
+    (normalized.includes("قابل اجرا نیست") && normalized.includes("بلند"))
+  ) {
+    return {
+      type: "needs_growth",
+      title: "نیازمند بلندتر شدن مو و گذشت زمان",
+      badgeText: "نیازمند رشد مو",
+      badgeBg: "bg-amber-500/15",
+      badgeBorder: "border-amber-500/30",
+      badgeTextCol: "text-amber-300",
+    };
+  }
+
+  if (
+    normalized.includes("کلاً قابل اجرا نیست") ||
+    normalized.includes("کلا قابل اجرا نیست") ||
+    normalized.includes("امکان پذیر نیست") ||
+    normalized.includes("امکان‌پذیر نیست") ||
+    normalized.includes("به دلیل طاسی") ||
+    normalized.includes("کم پشتی شدید") ||
+    normalized.includes("کم‌پشتی شدید")
+  ) {
+    return {
+      type: "not_possible",
+      title: "کلاً روی موی فعلی قابل اجرا نیست",
+      badgeText: "غیرقابل اجرا",
+      badgeBg: "bg-rose-500/15",
+      badgeBorder: "border-rose-500/30",
+      badgeTextCol: "text-rose-300",
+    };
+  }
+
+  if (
+    normalized.includes("با همین اندازه مو قابل اجرا است") ||
+    normalized.includes("با همین اندازه مو قابل اجراست") ||
+    normalized.includes("با همین اندازه") ||
+    normalized.includes("کاملاً مهیا") ||
+    normalized.includes("کاملا مهیا")
+  ) {
+    return {
+      type: "ready",
+      title: "با همین اندازه مو قابل اجرا است",
+      badgeText: "آماده اجرا",
+      badgeBg: "bg-emerald-500/15",
+      badgeBorder: "border-emerald-500/30",
+      badgeTextCol: "text-emerald-300",
+    };
+  }
+
+  return null;
+}
+
 function formatTimeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const mins = Math.floor(diff / 60000);
@@ -175,6 +256,8 @@ export default function TasksTab() {
   const retryTask = useMutation(api.ai.ai.retryTask);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [isRetrying, setIsRetrying] = useState<Record<string, boolean>>({});
+  const [activeFeasibilityTab, setActiveFeasibilityTab] = useState<Record<string, "result" | "prompt">>({});
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleRetry = async (taskId: Id<"ai_tasks">) => {
     try {
@@ -311,6 +394,35 @@ export default function TasksTab() {
                           {service.name}
                         </span>
                       ))}
+
+                    {/* Feasibility Indicator Badge */}
+                    {task.feasibilityAnalysis ? (
+                      task.feasibilityAnalysis.status === "completed" ? (
+                        <span className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-0.5 text-emerald-300 border border-emerald-500/20 text-xs font-medium whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          مشاوره: تکمیل شده
+                          {detectFeasibilityVerdict(task.feasibilityAnalysis.text) && (
+                            <span className="opacity-80 text-[10px]">
+                              ({detectFeasibilityVerdict(task.feasibilityAnalysis.text)?.badgeText})
+                            </span>
+                          )}
+                        </span>
+                      ) : task.feasibilityAnalysis.status === "processing" ? (
+                        <span className="flex items-center gap-1.5 rounded-md bg-teal-500/10 px-2 py-0.5 text-teal-300 border border-teal-500/20 text-xs font-medium whitespace-nowrap">
+                          <FiLoader className="text-[10px] animate-spin" />
+                          مشاوره: در پردازش
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 rounded-md bg-rose-500/10 px-2 py-0.5 text-rose-300 border border-rose-500/20 text-xs font-medium whitespace-nowrap">
+                          <FiAlertTriangle className="text-[10px]" />
+                          مشاوره: خطا
+                        </span>
+                      )
+                    ) : (
+                      <span className="rounded-md bg-white/5 px-2 py-0.5 text-white/35 border border-white/5 text-[11px] whitespace-nowrap">
+                        بدون مشاوره
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -516,6 +628,183 @@ export default function TasksTab() {
                       </div>
                     )}
                   </div>
+                </div>
+
+                {/* ── Full-Width Feasibility Consultation Section ── */}
+                <div className="mt-6 pt-5 border-t border-white/10 flex flex-col gap-3.5">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                        <FiActivity size={16} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          مشاوره اجرایی و امکان‌سنجی هوش مصنوعی
+                        </h4>
+                        <span className="text-[11px] text-white/40">
+                          تحلیل تناسب چهره، پیش‌نیازهای کوتاهی و تکنیک‌های آرایشگاهی
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status & Verdict Badges */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {task.feasibilityAnalysis ? (
+                        <>
+                          {task.feasibilityAnalysis.creditsUsed !== undefined && (
+                            <span className="text-[11px] text-white/40 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                              اعتبار کسر شده: {task.feasibilityAnalysis.creditsUsed}
+                            </span>
+                          )}
+                          {task.feasibilityAnalysis.completedAt && (
+                            <span className="text-[11px] text-white/40 bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                              {formatTimeAgo(task.feasibilityAnalysis.completedAt)}
+                            </span>
+                          )}
+                          {detectFeasibilityVerdict(task.feasibilityAnalysis.text) && (
+                            <span
+                              className={`text-xs px-2.5 py-1 rounded-lg font-bold border ${
+                                detectFeasibilityVerdict(task.feasibilityAnalysis.text)?.badgeBg
+                              } ${
+                                detectFeasibilityVerdict(task.feasibilityAnalysis.text)?.badgeBorder
+                              } ${
+                                detectFeasibilityVerdict(task.feasibilityAnalysis.text)?.badgeTextCol
+                              }`}
+                            >
+                              {detectFeasibilityVerdict(task.feasibilityAnalysis.text)?.title}
+                            </span>
+                          )}
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {task.feasibilityAnalysis ? (
+                    <div className="flex flex-col gap-3">
+                      {/* Tabs Bar */}
+                      <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/5">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveFeasibilityTab((prev) => ({
+                                ...prev,
+                                [task._id]: "result",
+                              }))
+                            }
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                              (activeFeasibilityTab[task._id] || "result") === "result"
+                                ? "bg-teal-500/20 text-teal-300 border border-teal-500/30 shadow-sm"
+                                : "text-white/50 hover:text-white/80"
+                            }`}
+                          >
+                            <FiFileText size={13} />
+                            <span>نتیجه تحلیل هوش مصنوعی</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setActiveFeasibilityTab((prev) => ({
+                                ...prev,
+                                [task._id]: "prompt",
+                              }))
+                            }
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                              activeFeasibilityTab[task._id] === "prompt"
+                                ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shadow-sm"
+                                : "text-white/50 hover:text-white/80"
+                            }`}
+                          >
+                            <FiTerminal size={13} />
+                            <span>پرامپت ارسالی به هوش مصنوعی</span>
+                          </button>
+                        </div>
+
+                        {/* Copy Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const isPrompt = activeFeasibilityTab[task._id] === "prompt";
+                            const textToCopy = isPrompt
+                              ? task.feasibilityAnalysis?.prompt || ""
+                              : task.feasibilityAnalysis?.text || "";
+                            if (!textToCopy) return;
+                            navigator.clipboard.writeText(textToCopy);
+                            const key = `${task._id}:${isPrompt ? "prompt" : "result"}`;
+                            setCopiedKey(key);
+                            setTimeout(() => setCopiedKey(null), 2000);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 text-xs font-medium transition cursor-pointer"
+                        >
+                          {copiedKey ===
+                          `${task._id}:${
+                            activeFeasibilityTab[task._id] === "prompt" ? "prompt" : "result"
+                          }` ? (
+                            <>
+                              <FiCheck className="text-emerald-400" size={13} />
+                              <span className="text-emerald-400">کپی شد!</span>
+                            </>
+                          ) : (
+                            <>
+                              <FiCopy size={13} />
+                              <span>کپی متن</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Content Box */}
+                      {(activeFeasibilityTab[task._id] || "result") === "result" ? (
+                        <div className="flex flex-col gap-2">
+                          {task.feasibilityAnalysis.status === "completed" &&
+                          task.feasibilityAnalysis.text ? (
+                            <div
+                              className="rounded-xl border border-white/10 bg-black/30 p-4 text-xs sm:text-sm text-white/90 leading-relaxed font-vazir whitespace-pre-wrap select-text text-right"
+                              dir="rtl"
+                            >
+                              {task.feasibilityAnalysis.text}
+                            </div>
+                          ) : task.feasibilityAnalysis.status === "processing" ? (
+                            <div className="flex items-center justify-center gap-2.5 p-6 rounded-xl border border-teal-500/20 bg-teal-500/5 text-teal-300 text-xs sm:text-sm">
+                              <FiLoader className="animate-spin text-base" />
+                              <span>هوش مصنوعی در حال بررسی و تحلیل چهره و بافت مو است...</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-300 text-xs sm:text-sm">
+                              <div className="flex items-center gap-2 font-bold">
+                                <FiAlertTriangle size={16} />
+                                <span>خطا در تحلیل اجرایی:</span>
+                              </div>
+                              <p className="text-rose-400 text-xs mt-1">
+                                {task.feasibilityAnalysis.errorMessage ||
+                                  "خطای نامشخص در ارتباط با هوش مصنوعی"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {task.feasibilityAnalysis.prompt ? (
+                            <div
+                              className="rounded-xl border border-indigo-500/20 bg-black/40 p-4 text-xs sm:text-sm text-indigo-200/90 leading-relaxed font-vazir whitespace-pre-wrap select-text text-right"
+                              dir="rtl"
+                            >
+                              {task.feasibilityAnalysis.prompt}
+                            </div>
+                          ) : (
+                            <div className="p-4 rounded-xl border border-white/10 bg-white/5 text-white/50 text-xs">
+                              پرامپت برای این تحلیل به صورت مستقل در پایگاه داده ثبت نشده است (مربوط به درخواست‌های قبل از اضافه شدن این قابلیت).
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-white/5 bg-white/5 p-4 text-center text-xs text-white/40">
+                      مشاوره اجرایی برای این درخواست ثبت نشده است.
+                    </div>
+                  )}
                 </div>
               </div>
             )}
