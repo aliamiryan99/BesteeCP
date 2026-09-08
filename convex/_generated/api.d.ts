@@ -25,6 +25,7 @@ import type * as ai_supportHelpDocs from "../ai/supportHelpDocs.js";
 import type * as ai_tools from "../ai/tools.js";
 import type * as announcements_announcements from "../announcements/announcements.js";
 import type * as auth from "../auth.js";
+import type * as blog_posts from "../blog/posts.js";
 import type * as bookings_bookings from "../bookings/bookings.js";
 import type * as bookings_deposit from "../bookings/deposit.js";
 import type * as bookings_mutations from "../bookings/mutations.js";
@@ -107,6 +108,7 @@ declare const fullApi: ApiFromModules<{
   "ai/tools": typeof ai_tools;
   "announcements/announcements": typeof announcements_announcements;
   auth: typeof auth;
+  "blog/posts": typeof blog_posts;
   "bookings/bookings": typeof bookings_bookings;
   "bookings/deposit": typeof bookings_deposit;
   "bookings/mutations": typeof bookings_mutations;
