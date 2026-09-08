@@ -83,7 +83,7 @@ export default function MagAdminPage() {
       slug: "",
       excerpt: "",
       content: "",
-      coverImage: "/images/BestieeBarber.webp",
+      coverImage: "/images/mag/men-haircut-guide.jpg",
       category: "barbers",
       tags: "مشاوره مدل مو, بستی, استایل",
       authorName: "تحریریه بستی",
